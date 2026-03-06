@@ -1,0 +1,126 @@
+# PM Radar — Cursor Rules
+
+## Project Overview
+PM Radar is a weekly AI-curated product intelligence feed for Product Managers.
+Users select domains (AI, SaaS, Product, Fintech, etc.) and get a digest of
+what happened last week — pulled from Product Hunt, Hacker News, and Reddit,
+summarized by AI, and presented in a sleek, engaging UI.
+
+---
+
+## Tech Stack
+- **Framework**: Next.js 14 (App Router)
+- **Styling**: Tailwind CSS
+- **Components**: shadcn/ui
+- **Animations**: Framer Motion
+- **Icons**: Lucide React
+- **Brand Logos**: Clearbit Logo API (`https://logo.clearbit.com/{domain}`) or Simple Icons
+- **Database**: Supabase (Postgres)
+- **Email**: Resend
+- **AI**: Anthropic Claude API (`claude-sonnet-4-20250514`)
+- **Hosting**: Vercel (Hobby tier)
+- **Cron**: Vercel Cron Jobs
+
+---
+
+## Code Style & Conventions
+
+### General
+- Always use TypeScript. No plain `.js` files.
+- Use named exports for components, default exports only for pages.
+- Keep components small and single-responsibility.
+- All API calls go in `/lib` or `/app/api` — never inline in components.
+- Use `async/await` over `.then()` chains.
+- Never hardcode API keys — always use `.env.local` variables.
+
+### File Structure
+```
+/app
+  /api          → API routes (cron jobs, data fetching, subscriptions)
+  /components   → Reusable UI components
+  /lib          → Utility functions, API clients, helpers
+  /types        → TypeScript interfaces and types
+  /(pages)      → Route pages
+/public
+  /logos        → Cached brand logos if needed
+```
+
+### Naming
+- Components: `PascalCase` (e.g., `FeedCard.tsx`)
+- Utilities/helpers: `camelCase` (e.g., `fetchProductHunt.ts`)
+- Constants: `UPPER_SNAKE_CASE`
+- CSS classes: Tailwind utility classes only, no custom CSS unless absolutely necessary
+
+---
+
+## UI & Design Rules
+
+### Aesthetic Direction
+- **Theme**: Dark-first. Deep navy/charcoal backgrounds with sharp accent colors.
+- **Feel**: Editorial meets dashboard — like a high-end tech magazine, not a SaaS tool.
+- **Typography**: Use a distinctive display font for headings (e.g., Cabinet Grotesk, Syne, or Clash Display via @fontsource). Pair with a clean readable body font. Never use Inter, Roboto, or Arial.
+- **Color palette**: Dark background (`#0a0a0f`), subtle card surfaces (`#13131a`), sharp accent (electric teal `#00d4aa` or amber `#f59e0b`). Commit to one accent color and use it consistently.
+- **Avoid**: Purple gradients on white, generic SaaS blue, cookie-cutter layouts.
+
+### Animations (Framer Motion)
+- Use staggered reveal animations on feed card load.
+- Subtle hover states on cards (slight lift + border glow).
+- Smooth page transitions.
+- Do not over-animate — one well-orchestrated load sequence beats scattered effects.
+
+### Components
+- Every content card must show: source brand logo, source name, title, AI summary, tags, and a link.
+- Source logos must be real brand logos — use Clearbit or Simple Icons. Never use placeholder icons for sources.
+- Tags should be color-coded by domain (AI = teal, SaaS = amber, Product = violet, etc.).
+- Cards should feel like editorial content, not database rows.
+
+---
+
+## Data & API Rules
+
+### External APIs
+- Product Hunt: Use the official GraphQL API (`https://api.producthunt.com/v2/api/graphql`)
+- Hacker News: Use the official Firebase API (`https://hacker-news.firebaseio.com/v0/`)
+- Reddit: Use the public JSON API (`https://www.reddit.com/r/{subreddit}.json`)
+- Always handle rate limits and errors gracefully — never let an API failure crash the UI.
+- Cache API responses in Supabase to avoid redundant fetches.
+
+### AI Summarization
+- Use `claude-sonnet-4-20250514` for all AI summarization.
+- Summaries must be 2-3 sentences max — punchy and informative, not bloated.
+- Always include a relevance score (1-10) per item based on the selected domain.
+- Strip any markdown formatting from AI responses before rendering.
+
+### Environment Variables
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+ANTHROPIC_API_KEY=
+RESEND_API_KEY=
+PRODUCT_HUNT_API_KEY=
+```
+
+---
+
+## Do Nots
+- Do NOT use `localStorage` or `sessionStorage` — use Supabase for persistence.
+- Do NOT use `<form>` HTML tags — use controlled components with `onClick`/`onChange`.
+- Do NOT use default Next.js or Tailwind styles without customization.
+- Do NOT skip loading and error states — every async operation needs both.
+- Do NOT use `any` in TypeScript — define proper types.
+- Do NOT fetch data directly in components — use dedicated `/lib` functions.
+- Do NOT use placeholder logos or icons for known brands.
+
+---
+
+## V1 Scope (Weekend 1)
+Focus only on:
+1. Landing page with branding
+2. Domain selector
+3. Feed page with cards (Product Hunt + HN + Reddit)
+4. AI summarization per card
+5. Vercel Cron for weekly refresh
+6. No auth, no email yet
+
+Do not build email subscriptions, auth, or podcast integrations in V1.
