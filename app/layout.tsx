@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Analytics } from "@vercel/analytics/next";
+import { Analytics } from '@vercel/analytics/next';
 import "@fontsource/syne/400.css";
 import "@fontsource/syne/500.css";
 import "@fontsource/syne/600.css";
