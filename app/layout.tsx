@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/react";
 import "@fontsource/syne/400.css";
 import "@fontsource/syne/500.css";
 import "@fontsource/syne/600.css";
@@ -25,6 +26,7 @@ export default function RootLayout({
     <html lang="en" className="dark overflow-x-hidden">
       <body className="min-h-screen min-w-0 bg-[#0a0a0f] text-zinc-200 font-sans antialiased noise-overlay overflow-x-hidden">
         {children}
+        <Analytics />
       </body>
     </html>
   );
