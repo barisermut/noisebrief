@@ -1,23 +1,30 @@
-export type Domain =
-  | "AI"
-  | "SaaS"
-  | "Product"
-  | "Fintech"
-  | "DevTools"
-  | "Design"
-  | "Growth";
+export type Tone =
+  | "Quirky"
+  | "Formal"
+  | "Cheesy"
+  | "Savage"
+  | "Inspirational"
+  | "TLDR";
 
-export type Source = "ProductHunt" | "HackerNews" | "Reddit";
-
-export interface FeedItem {
-  id: string;
+export interface Source {
   title: string;
   url: string;
-  source: Source;
-  sourceDomain: string;
-  summary: string;
-  tags: Domain[];
-  relevanceScore: number;
+  sourceName: string;
+  domain: string;
   publishedAt: string;
-  upvotes?: number;
+}
+
+export interface DailyBrief {
+  id: string;
+  date: string;
+  title: string;
+  summary: string;
+  paragraphs: string[];
+  sources: Source[];
+  createdAt: string;
+}
+
+export interface GeneratedPost {
+  tone: Tone;
+  post: string;
 }

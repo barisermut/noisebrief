@@ -1,11 +1,19 @@
 import type { Metadata } from "next";
+import "@fontsource/syne/400.css";
+import "@fontsource/syne/500.css";
+import "@fontsource/syne/600.css";
+import "@fontsource/syne/700.css";
 import "./globals.css";
-import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = {
-  title: "PM Radar — Your weekly product intelligence briefing",
+  title: "Noisebrief — Today's tech noise. Briefly.",
   description:
-    "Weekly AI-curated intelligence feed for Product Managers. Pick your domains, get a digest of the most relevant content from Product Hunt, Hacker News, and Reddit.",
+    "Daily one-pager: what happened today in tech? AI-summarized from Hacker News, TechCrunch, The Verge, Wired, and Reddit.",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
@@ -14,9 +22,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen bg-background text-foreground antialiased">
-        <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+    <html lang="en" className="dark overflow-x-hidden">
+      <body className="min-h-screen min-w-0 bg-[#0a0a0f] text-zinc-200 font-sans antialiased noise-overlay overflow-x-hidden">
+        {children}
       </body>
     </html>
   );

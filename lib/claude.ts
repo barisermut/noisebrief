@@ -1,131 +1,144 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { RawFeedEntry } from "./feed-sources";
-import type { Domain, Source } from "@/types";
+import type { Source } from "@/types";
 
-const MODEL = "claude-sonnet-4-20250514";
-const ALLOWED_TAGS: Domain[] = ["AI", "SaaS", "Product", "Fintech", "DevTools", "Design", "Growth"];
-const BATCH_SIZE = 10;
-const MAX_TOKENS = 300;
+const SONNET_MODEL = "claude-sonnet-4-20250514";
+const HAIKU_MODEL = "claude-haiku-4-5-20251001";
 
-function sourceLabel(s: Source): string {
-  return s === "HackerNews" ? "Hacker News" : s === "ProductHunt" ? "Product Hunt" : "Reddit";
+function getAnthropic(): Anthropic {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) throw new Error("Missing ANTHROPIC_API_KEY");
+  return new Anthropic({ apiKey: key });
 }
 
-function fallbackSummaryFor(entry: RawFeedEntry): string {
-  const desc = entry.description?.trim();
-  if (desc && desc !== entry.title) return desc;
-  return `Shared on ${sourceLabel(entry.source)}. Open the link to read the full article.`;
-}
-
-export interface SummaryResult {
-  summary: string;
-  relevanceScore: number;
-  tags: Domain[];
-}
-
-/** One API call for up to 10 items. Returns JSON array. */
-async function summarizeChunk(
-  apiKey: string,
-  entries: RawFeedEntry[],
-  selectedDomains: Domain[]
-): Promise<SummaryResult[]> {
-  const client = new Anthropic({ apiKey });
-  const domains = selectedDomains.length ? selectedDomains.join(", ") : ALLOWED_TAGS.join(", ");
-  const itemsText = entries
-    .map((e, i) => `${i + 1}. ${e.title}${e.description && e.description !== e.title ? ` | ${e.description.slice(0, 80)}` : ""}`)
+function formatArticles(sources: Source[]): string {
+  return sources
+    .map((s) => `- ${s.title} (${s.sourceName}): ${s.url}`)
     .join("\n");
-  const prompt = `Domains: ${domains}. Output exactly ${entries.length} lines. Each line: summary (1-2 short sentences) | score (1-10) | tags (comma-separated from: ${ALLOWED_TAGS.join(", ")}). One line per item, no other text.
-${itemsText}`;
+}
 
-  const message = await client.messages.create({
-    model: MODEL,
-    max_tokens: MAX_TOKENS,
+export interface DailySummaryResult {
+  title: string;
+  paragraphs: string[];
+  summary: string;
+  usedSources: Source[];
+}
+
+export async function generateDailySummary(sources: Source[]): Promise<DailySummaryResult> {
+  const articles = formatArticles(sources);
+  const prompt = `You are a sharp tech journalist. Below are tech news headlines and stories from across the web (multiple sources, up to 10 items per source). Pick the most newsworthy and diverse items — focus on the biggest story, other notable developments, and the weird or dramatic story of the day.
+
+Write a daily brief and return ONLY valid JSON in this exact format (no preamble, no markdown backticks):
+{
+  "title": "A punchy 4-6 word theme for the day e.g. 'AI Takes On The Government'",
+  "paragraphs": [
+    "First paragraph — 2-3 sentences on the biggest story",
+    "Second paragraph — 2-3 sentences on other notable developments",
+    "Third paragraph — 2-3 sentences on the weird, interesting or dramatic story of the day"
+  ]
+}
+
+Rules: title must be 4-6 words, punchy. Exactly 3 paragraphs, each 2-3 sentences. Be direct, insightful, slightly opinionated. No fluff. Use the full list to choose what matters most.
+
+Articles:
+${articles}
+
+Return only the JSON object, nothing else.`;
+
+  const anthropic = getAnthropic();
+  const message = await anthropic.messages.create({
+    model: SONNET_MODEL,
+    max_tokens: 1000,
     messages: [{ role: "user", content: prompt }],
   });
+
   const text =
-    message.content?.find((b) => b.type === "text")?.type === "text"
-      ? (message.content.find((b) => b.type === "text") as { type: "text"; text: string }).text
-      : "";
-  const lines = text.trim().split("\n").filter(Boolean);
-  const results: SummaryResult[] = [];
-  const fallbackTags = selectedDomains.length ? [selectedDomains[0]] : [];
-  for (let i = 0; i < entries.length; i++) {
-    const line = lines[i];
-    const entry = entries[i];
-    if (!line) {
-      results.push({
-        summary: fallbackSummaryFor(entry),
-        relevanceScore: 5,
-        tags: entry.tags.length > 0 ? entry.tags : fallbackTags,
-      });
-      continue;
-    }
-    const pipeSplit = line.split("|").map((s) => s.trim());
-    const rawSummary = (pipeSplit[0] ?? "").replace(/^\d+\.\s*/, "").trim();
-    const summary =
-      rawSummary.length > 10
-        ? rawSummary.slice(0, 200)
-        : fallbackSummaryFor(entry);
-    const scoreStr = pipeSplit[1]?.replace(/\D/g, "") ?? "5";
-    const score = Math.min(10, Math.max(1, parseInt(scoreStr, 10) || 5));
-    const tagStr = pipeSplit[2] ?? "";
-    const tags = tagStr
-      .split(",")
-      .map((s) => s.trim() as Domain)
-      .filter((t) => ALLOWED_TAGS.includes(t));
-    results.push({
-      summary,
-      relevanceScore: score,
-      tags: tags.length > 0 ? tags : (entry.tags.length > 0 ? entry.tags : fallbackTags),
-    });
-  }
-  return results;
+    message.content
+      .filter((c) => c.type === "text")
+      .map((c) => (c as { type: "text"; text: string }).text)
+      .join("")
+      .trim() ?? "";
+
+  const parsed = JSON.parse(text) as { title: string; paragraphs: string[] };
+  const title = typeof parsed.title === "string" ? parsed.title : "Today's Brief";
+  const paragraphs = Array.isArray(parsed.paragraphs)
+    ? parsed.paragraphs.filter((p): p is string => typeof p === "string")
+    : [text];
+  const summary = paragraphs.join("\n\n");
+
+  return {
+    title,
+    paragraphs,
+    summary,
+    usedSources: sources,
+  };
 }
 
-/** Batch: one API call per 10 items. */
-export async function summarizeBatch(
-  apiKey: string,
-  entries: RawFeedEntry[],
-  selectedDomains: Domain[]
-): Promise<SummaryResult[]> {
-  const out: SummaryResult[] = [];
-  for (let i = 0; i < entries.length; i += BATCH_SIZE) {
-    const chunk = entries.slice(i, i + BATCH_SIZE);
-    try {
-      const chunkResults = await summarizeChunk(apiKey, chunk, selectedDomains);
-      out.push(...chunkResults);
-    } catch {
-      chunk.forEach((entry) => {
-        out.push({
-          summary: fallbackSummaryFor(entry),
-          relevanceScore: 5,
-          tags: entry.tags.length > 0 ? entry.tags : (selectedDomains.length ? [selectedDomains[0]] : []),
-        });
-      });
-    }
-  }
-  return out;
-}
+const LINKEDIN_TONE_GUIDELINES: Record<string, string> = {
+  Quirky:
+    "Quirky: Funny, self-aware, witty. Uses em dashes and unexpected angles. Casual voice.",
+  Formal:
+    "Professional and direct. ONE strong hook question or statement. Then ONE paragraph of 2-3 sentences max with the key insight. End with ONE sentence conclusion. Then hashtags. No think-piece structure. No 'convergence of' or 'at an inflection point' type corporate language. Sound like a sharp exec, not a consultant.",
+  Cheesy:
+    "Peak LinkedIn cringe but SHORT. Max 5 lines total. One punchy opener. One dramatic observation. One 'This.' or 'Let that sink in.' One cheesy closer. Hashtags. Do NOT write multiple paragraphs — cheesy works in short bursts only.",
+  Savage:
+    "Savage: Brutally honest, slightly edgy, calls out industry BS. Short punchy sentences.",
+  Inspirational:
+    "Uplifting and reflective but BRIEF. One inspiring hook. One short paragraph (2 sentences max) connecting the news to a bigger lesson. One punchy closing line that lands like a mic drop. Then hashtags. No lists of questions. No 'path forward' corporate speak.",
+  TLDR:
+    "TL;DR: Maximum 3 short lines + hashtags. Nothing else.",
+};
 
-/** One short paragraph for the week. Short prompt, low tokens. */
-export async function getWeeklySummary(
-  apiKey: string,
-  titles: string[],
-  sourceLabels: string[]
+const LINKEDIN_MAX_CHARS: Record<string, number> = {
+  Quirky: 500,
+  Formal: 700,
+  Cheesy: 600,
+  Savage: 400,
+  Inspirational: 600,
+  TLDR: 280,
+};
+
+export async function generateLinkedInPost(
+  summary: string,
+  tone: string
 ): Promise<string> {
-  const client = new Anthropic({ apiKey });
-  const list = titles.slice(0, 15).map((t, i) => `${i + 1}. [${sourceLabels[i] ?? "?"}] ${t}`).join("\n");
-  const message = await client.messages.create({
-    model: MODEL,
-    max_tokens: 120,
-    messages: [{
-      role: "user",
-      content: `2-3 sentences on what's notable this week. Punchy.\n\n${list}`,
-    }],
+  const guidelines = LINKEDIN_TONE_GUIDELINES[tone] ?? tone;
+  const maxChars = LINKEDIN_MAX_CHARS[tone] ?? 600;
+
+  const prompt = `You are a LinkedIn post writer. Write a LinkedIn post based on this tech news summary.
+
+Tone: ${tone}
+
+Summary:
+${summary}
+
+STRICT RULES — follow these exactly:
+- NO markdown formatting whatsoever — no **bold**, no *italic*, no # headers, no bullet points with dashes
+- NO numbered lists with bold text
+- LinkedIn plain text only — use line breaks between paragraphs
+- Start with a strong HOOK on the first line — one punchy sentence that grabs attention (a question, a bold statement, or a surprising fact). This is the most important line.
+- Leave one blank line after the hook before continuing
+- End with 2-3 relevant hashtags on the last line, no more
+- Do not start with "This week" or "The past week" — be more direct and punchy
+
+HARD LIMIT: This post must be under ${maxChars} characters total including hashtags. Count carefully. Cut ruthlessly. Shorter is better.
+
+Tone guidelines:
+${guidelines}
+
+Return only the post text. No preamble, no explanation, no quotes around the post.`;
+
+  const anthropic = getAnthropic();
+  const message = await anthropic.messages.create({
+    model: HAIKU_MODEL,
+    max_tokens: 250,
+    messages: [{ role: "user", content: prompt }],
   });
+
   const text =
-    message.content?.find((b) => b.type === "text")?.type === "text"
-      ? (message.content.find((b) => b.type === "text") as { type: "text"; text: string }).text
-      : "";
-  return text.trim() || "This week's top picks from your selected sources.";
+    message.content
+      .filter((c) => c.type === "text")
+      .map((c) => (c as { type: "text"; text: string }).text)
+      .join("") ?? "";
+
+  return text.trim();
 }

@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+AUDIT.md
 
 # debug
 npm-debug.log*
@@ -30,14 +31,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files — never commit secrets (Next.js loads .env.local automatically)
-.env
-.env.local
-.env*.local
-.env.development.local
-.env.test.local
-.env.production.local
+# env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
