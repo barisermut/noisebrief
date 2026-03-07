@@ -448,13 +448,13 @@ export function NoisebriefContent() {
           {generateError && (
             <p className="mt-2 text-sm text-red-400">{generateError}</p>
           )}
-          <div className="mt-4" style={{ minHeight: "200px" }}>
-            {selectedTone &&
-              (generatingTone === selectedTone ? (
+          <div className="relative mt-4">
+            <GeneratedPost post={displayPost ?? ""} visible={!!displayPost} />
+            {selectedTone && generatingTone === selectedTone && (
+              <div className="absolute inset-0" aria-hidden>
                 <PostCardSkeleton />
-              ) : displayPost ? (
-                <GeneratedPost post={displayPost} />
-              ) : null)}
+              </div>
+            )}
           </div>
         </motion.section>
       )}
