@@ -175,14 +175,14 @@ export function SourceList({ sources, briefDate, summaryComplete = false }: Sour
               View all sources →
             </button>
           </DialogTrigger>
-          <DialogContent className="fixed inset-x-0 bottom-0 top-auto z-50 mx-0 grid w-full max-w-none translate-x-0 translate-y-0 gap-4 overflow-hidden rounded-t-xl border-t border-zinc-800 bg-[#13131a] p-4 text-zinc-200 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:mx-4 sm:max-w-2xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:border sm:p-6">
-            <DialogHeader>
+          <DialogContent className="fixed inset-x-0 bottom-0 top-auto z-50 mx-0 flex max-h-[90vh] w-full max-w-none flex-col translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-t-xl border-t border-zinc-800 bg-[#13131a] p-4 text-zinc-200 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:mx-4 sm:max-w-2xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:border sm:p-6">
+            <DialogHeader className="shrink-0">
               <DialogTitle className="pr-8 text-lg font-semibold text-white sm:pr-0">
                 All sources for {modalDate}
               </DialogTitle>
             </DialogHeader>
-            <div className="mt-4 min-w-0 space-y-3 overflow-hidden">
-              <div className="relative min-w-0">
+            <div className="mt-4 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+              <div className="relative min-w-0 shrink-0">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 shrink-0 -translate-y-1/2 text-zinc-500" />
                 <input
                   type="text"
@@ -190,8 +190,7 @@ export function SourceList({ sources, briefDate, summaryComplete = false }: Sour
                   value={search}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   autoFocus={false}
-                  readOnly
-                  onFocus={(e) => e.target.removeAttribute("readonly")}
+                  onMouseDown={(e) => e.preventDefault()}
                   className="w-full min-w-0 rounded-lg border border-white/10 bg-white/5 py-2.5 pl-9 pr-10 text-sm text-zinc-200 placeholder:text-zinc-500 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
                 />
                 {search && (
@@ -205,7 +204,7 @@ export function SourceList({ sources, briefDate, summaryComplete = false }: Sour
                   </button>
                 )}
               </div>
-              <ul className="max-h-[60vh] space-y-2 overflow-y-auto overflow-x-hidden pr-1">
+              <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden pr-1">
                 {paginated.map((s, i) => (
                   <li
                     key={`${s.url}-${s.publishedAt}-${i}`}
@@ -215,7 +214,7 @@ export function SourceList({ sources, briefDate, summaryComplete = false }: Sour
                   </li>
                 ))}
               </ul>
-              <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-t border-white/5 pt-3">
+              <div className="flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-2 border-t border-white/5 pt-3">
                 <span className="shrink-0 text-xs text-zinc-500">
                   Page {currentPage} of {totalPages}
                 </span>
