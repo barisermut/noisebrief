@@ -10,9 +10,12 @@ export const metadata: Metadata = {
   title: "Noisebrief — Today's tech noise. Briefly.",
   description:
     "Daily one-pager: what happened today in tech? AI-summarized from Hacker News, TechCrunch, The Verge, Wired, and Reddit.",
-  // iOS: SVG tab icons often show as placeholder. Use PNG for both so tabs + home screen show the real icon.
+  // Single source of truth: app/favicon.ico (N logo). Cache-bust so deploy clears Vercel/browser cache.
   icons: {
-    icon: [{ url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" }],
+    icon: [
+      { url: "/favicon.ico?v=2", sizes: "any" },
+      { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+    ],
     apple: [{ url: "/apple-touch-icon.png?v=3", sizes: "180x180", type: "image/png" }],
   },
 };
