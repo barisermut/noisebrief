@@ -41,10 +41,23 @@ function truncatePostWithHashtags(post: string, maxLen: number): string {
 /** Type for generated_posts jsonb: tone -> post text */
 type GeneratedPostsMap = Record<string, string>;
 
+/** Validate YYYY-MM-DD date string. */
+function isValidDateString(s: string): boolean {
+  if (typeof s !== "string" || s.length !== 10) return false;
+  const [y, m, d] = s.split("-").map(Number);
+  if (Number.isNaN(y) || Number.isNaN(m) || Number.isNaN(d)) return false;
+  const date = new Date(y, m - 1, d);
+  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { tone, summary } = body as { tone?: string; summary?: string };
+    const { tone, summary, briefDate: rawBriefDate } = body as {
+      tone?: string;
+      summary?: string;
+      briefDate?: string;
+    };
 
     if (!tone || typeof summary !== "string") {
       return NextResponse.json(
@@ -57,6 +70,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid tone" }, { status: 400 });
     }
 
+    if (typeof rawBriefDate !== "string" || !isValidDateString(rawBriefDate)) {
+      return NextResponse.json(
+        { error: "Invalid or missing briefDate (expected YYYY-MM-DD)" },
+        { status: 400 }
+      );
+    }
+    const briefDate = rawBriefDate;
+
     if (summary.length > SUMMARY_MAX_LENGTH) {
       return NextResponse.json(
         { error: "Summary too long" },
@@ -64,15 +85,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const today = new Date().toISOString().slice(0, 10);
     // All reads and writes use service role client; anon client cannot write rows.
     const supabaseAdmin = getSupabaseAdmin();
 
-    console.log("Checking Supabase cache for tone:", tone);
+    console.log("Checking Supabase cache for tone:", tone, "briefDate:", briefDate);
     const { data } = await supabaseAdmin
       .from("daily_briefs")
       .select("generated_posts, date")
-      .eq("date", today)
+      .eq("date", briefDate)
       .maybeSingle();
 
     if (process.env.NODE_ENV === "development") {
@@ -99,7 +119,7 @@ export async function POST(request: NextRequest) {
 
     console.log("Saving to Supabase...");
     const { error: rpcError } = await supabaseAdmin.rpc("set_generated_post_if_missing", {
-      brief_date: today,
+      brief_date: briefDate,
       tone_key: tone,
       post_text: generatedPost,
     });

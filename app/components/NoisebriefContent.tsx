@@ -185,6 +185,11 @@ export function NoisebriefContent() {
       const cached = postCacheRef.current.get(tone);
       if (cached) return;
 
+      if (!brief?.date) {
+        setGenerateError("No brief date available.");
+        return;
+      }
+
       setGeneratingTone(tone);
       try {
         const res = await fetch("/api/post/generate", {
@@ -192,7 +197,8 @@ export function NoisebriefContent() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             tone,
-            summary: brief?.summary ?? "",
+            summary: brief.summary,
+            briefDate: brief.date,
           }),
         });
         const data = await res.json();
@@ -205,7 +211,7 @@ export function NoisebriefContent() {
         setGeneratingTone(null);
       }
     },
-    [brief?.summary]
+    [brief?.summary, brief?.date]
   );
 
   const displayPost =
