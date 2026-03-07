@@ -448,7 +448,8 @@ export function NoisebriefContent() {
           {generateError && (
             <p className="mt-2 text-sm text-red-400">{generateError}</p>
           )}
-          <div className="relative mt-4">
+          {/* Fixed height so DOM never changes — prevents iOS scroll shake; matches tallest possible GeneratedPost card */}
+          <div className="relative mt-4 overflow-hidden" style={{ height: 420 }}>
             <GeneratedPost post={displayPost ?? ""} visible={!!displayPost} />
             {selectedTone && generatingTone === selectedTone && (
               <div className="absolute inset-0" aria-hidden>

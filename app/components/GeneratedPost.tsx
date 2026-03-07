@@ -15,7 +15,9 @@ export function GeneratedPost({ post, visible }: GeneratedPostProps) {
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    console.log("[GeneratedPost] mounted");
     return () => {
+      console.log("[GeneratedPost] unmounted");
       if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
     };
   }, []);
