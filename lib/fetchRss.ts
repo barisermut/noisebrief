@@ -105,15 +105,16 @@ export async function fetchRssFeed(
         publishedAt: item.isoDate ?? item.pubDate ?? new Date().toISOString(),
       }));
 
-    // Reddit: 48h filter then sort by newest, take top 10
+    // Reddit: 48h filter then sort by newest; limit 5 per sub. Non-Reddit: 10 per source.
     const filtered =
       isRedditUrl(url) ?
         mapped.filter((item) => new Date(item.publishedAt).getTime() >= cutoff)
       : mapped;
 
+    const limit = isRedditUrl(url) ? 5 : 10;
     const result = [...filtered]
       .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-      .slice(0, 10);
+      .slice(0, limit);
     if (process.env.NODE_ENV === "development") {
       console.log(`[${sourceName}] returned ${result.length} items`);
     }
