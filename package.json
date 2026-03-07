@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "favicon:ico": "node scripts/generate-favicon-ico.cjs"
+    "favicon:ico": "node scripts/generate-favicon-ico.cjs",
+    "og:image": "node scripts/generate-og-image.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
