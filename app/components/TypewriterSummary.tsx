@@ -46,6 +46,7 @@ export function TypewriterSummary({
 
     const tick = () => {
       if (skipRef?.current === true || skipToEnd) {
+        cancelAnimationFrame(rafId);
         setIndex(text.length);
         setDisplayed(text);
         if (text.length > 0 && onComplete && !completedFired) {
@@ -67,6 +68,7 @@ export function TypewriterSummary({
       }
 
       if (targetIndex >= text.length && text.length > 0) {
+        cancelAnimationFrame(rafId);
         if (onComplete && !completedFired) {
           setCompletedFired(true);
           onComplete();
@@ -105,15 +107,20 @@ export function TypewriterSummary({
 
   return (
     <motion.div
+      layout={false}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
+      viewport={{ once: true }}
+      style={{ willChange: "transform" }}
       className={className}
     >
       {skipToEnd || skipRef?.current === true ? text : displayed}
       {!skipToEnd && skipRef?.current !== true && index < text.length && (
         <motion.span
+          layout={false}
           animate={{ opacity: [1, 0] }}
           transition={{ duration: 0.5, repeat: Infinity }}
+          style={{ willChange: "transform" }}
         >
           |
         </motion.span>

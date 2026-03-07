@@ -55,6 +55,7 @@ export function TypewriterParagraphs({
 
     const tick = () => {
       if (skipRef?.current === true || skipToEnd) {
+        cancelAnimationFrame(rafId);
         if (paragraphs.length > 0 && onComplete && !completedFired) {
           setCompletedFired(true);
           onComplete();
@@ -65,6 +66,7 @@ export function TypewriterParagraphs({
       const elapsed = Date.now() - startTimeRef.current;
 
       if (elapsed >= totalDuration && paragraphs.length > 0) {
+        cancelAnimationFrame(rafId);
         setParagraphIndex(paragraphs.length - 1);
         setCharIndex(paragraphs[paragraphs.length - 1]?.length ?? 0);
         setDisplayed(paragraphs[paragraphs.length - 1] ?? "");
@@ -201,8 +203,10 @@ export function TypewriterParagraphs({
           {displayed}
           {!allDone && (
             <motion.span
+              layout={false}
               animate={{ opacity: [1, 0] }}
               transition={{ duration: 0.5, repeat: Infinity }}
+              style={{ willChange: "transform" }}
             >
               |
             </motion.span>

@@ -33,8 +33,11 @@ export function GeneratedPost({ post }: GeneratedPostProps) {
 
   return (
     <motion.div
+      layout={false}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      style={{ willChange: "transform" }}
       className="min-w-0 rounded-xl border border-white/10 border-l-4 border-l-teal-400 bg-[#13131a] p-3 sm:p-4"
     >
       <div className="mb-3 flex min-w-0 items-center gap-2">

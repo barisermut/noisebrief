@@ -87,10 +87,14 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    -webkit-overflow-scrolling: touch;
+  }
+  html {
+    overflow-x: hidden;
   }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
     /* GPU layer for main scroll container to reduce iOS momentum-scroll jank */
     will-change: transform;
     transform: translateZ(0);

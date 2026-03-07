@@ -29,8 +29,10 @@ export function ToneSelector({
         <motion.button
           key={tone}
           type="button"
+          layout={false}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
+          style={{ willChange: "transform" }}
           onClick={() => !loading && onSelect(tone)}
           disabled={loading}
           className={`flex min-h-[44px] min-w-0 shrink items-center justify-center rounded-lg border-2 px-3 py-2 text-sm font-medium transition-colors ${

@@ -76,12 +76,15 @@ function SourceItem({
   if (animate) {
     return (
       <motion.li
+        layout={false}
         initial={{ opacity: 0, y: 8 }}
         animate={{
           opacity: summaryComplete ? 1 : 0,
           y: summaryComplete ? 0 : 8,
         }}
         transition={{ delay: index * (staggerDelayMs / 1000), duration: 0.25 }}
+        viewport={{ once: true }}
+        style={{ willChange: "transform" }}
         className={className}
       >
         <SourceItemRow source={source} truncateTitle={false} />

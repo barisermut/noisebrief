@@ -398,10 +398,13 @@ export function NoisebriefContent() {
 
       {brief && brief.sources.length > 0 && (
         <motion.section
+          layout={false}
           className="mb-6 min-w-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: summaryComplete ? 1 : 0 }}
           transition={{ duration: 0.3 }}
+          viewport={{ once: true }}
+          style={{ willChange: "transform" }}
         >
           <h2
             className="mb-3 font-heading text-base font-semibold text-zinc-400 sm:text-lg"
@@ -419,10 +422,13 @@ export function NoisebriefContent() {
 
       {brief?.summary && (
         <motion.section
+          layout={false}
           className="mb-6 min-w-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: sourcesRevealed ? 1 : 0 }}
           transition={{ duration: 0.3 }}
+          viewport={{ once: true }}
+          style={{ willChange: "transform" }}
         >
           <h2
             id="make-it-yours"
