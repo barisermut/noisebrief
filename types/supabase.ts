@@ -42,5 +42,11 @@ export interface Database {
         };
       };
     };
+    Functions: {
+      set_generated_post_if_missing: {
+        Args: { brief_date: string; tone_key: string; post_text: string };
+        Returns: undefined;
+      };
+    };
   };
 }

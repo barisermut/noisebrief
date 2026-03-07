@@ -65,15 +65,22 @@ export async function POST(request: NextRequest) {
     }
 
     const today = new Date().toISOString().slice(0, 10);
-    const supabase = getSupabaseAdmin();
+    // All reads and writes use service role client; anon client cannot write rows.
+    const supabaseAdmin = getSupabaseAdmin();
 
-    const { data } = await supabase
+    console.log("Checking Supabase cache for tone:", tone);
+    const { data } = await supabaseAdmin
       .from("daily_briefs")
-      .select("generated_posts")
+      .select("generated_posts, date")
       .eq("date", today)
       .maybeSingle();
 
-    const row = data as Pick<DailyBriefRow, "generated_posts"> | null;
+    if (process.env.NODE_ENV === "development") {
+      console.log("Supabase select result:", data);
+      if (data?.date != null) console.log("Stored date format:", data.date, "query date:", today);
+    }
+
+    const row = data as (Pick<DailyBriefRow, "generated_posts"> & { date?: string }) | null;
     const cached = (row?.generated_posts as GeneratedPostsMap | null) ?? {};
     if (cached[tone]) {
       if (process.env.NODE_ENV === "development") {
@@ -82,22 +89,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ post: cached[tone] });
     }
 
-    let post = await generateLinkedInPost(summary, tone);
-    if (post.length > POST_MAX_CHARS) {
+    console.log("Cache miss - generating with Claude");
+    let generatedPost = await generateLinkedInPost(summary, tone);
+    if (generatedPost.length > POST_MAX_CHARS) {
       if (process.env.NODE_ENV === "development") {
-        console.warn(`[post/generate] Post exceeded ${POST_MAX_CHARS} chars (${post.length}), truncating.`);
+        console.warn(`[post/generate] Post exceeded ${POST_MAX_CHARS} chars (${generatedPost.length}), truncating.`);
       }
-      post = truncatePostWithHashtags(post, POST_MAX_CHARS);
+      generatedPost = truncatePostWithHashtags(generatedPost, POST_MAX_CHARS);
     }
 
-    const updatedPosts: GeneratedPostsMap = { ...cached, [tone]: post };
-    type DailyBriefUpdate = Database["public"]["Tables"]["daily_briefs"]["Update"];
-    const table = supabase.from("daily_briefs");
-    // Supabase builder can infer update() param as never; payload matches DailyBriefUpdate
-    // @ts-expect-error TS inference bug with narrow Update payload
-    await table.update({ generated_posts: updatedPosts } as DailyBriefUpdate).eq("date", today);
+    console.log("Saving to Supabase...");
+    const { error: rpcError } = await supabaseAdmin.rpc("set_generated_post_if_missing", {
+      brief_date: today,
+      tone_key: tone,
+      post_text: generatedPost,
+    });
+    if (rpcError) {
+      // ACTION REQUIRED: If function not found, run supabase/migrations/set_generated_post_if_missing.sql in Supabase SQL editor.
+      console.error("Supabase RPC set_generated_post_if_missing error:", rpcError);
+      return NextResponse.json(
+        { error: "Failed to save generated post" },
+        { status: 500 }
+      );
+    }
+    console.log("Saved successfully");
 
-    return NextResponse.json({ post });
+    return NextResponse.json({ post: generatedPost });
   } catch (err) {
     console.error("Post generate error:", err);
     return NextResponse.json(
