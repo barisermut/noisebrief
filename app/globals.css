@@ -98,6 +98,15 @@
   }
 }
 
+/* Section reveal: opacity-only transition (compositor-only, no Framer observers during scroll) */
+.section-reveal {
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+}
+.section-reveal.section-reveal-visible {
+  opacity: 1;
+}
+
 /* Tone-result card: opacity-only animation (compositor-only, no layout recalc on iOS) */
 .post-card-enter {
   animation: post-card-fade-in 0.3s ease-out forwards;

@@ -10,7 +10,6 @@ import { SourceList } from "./SourceList";
 import { ToneSelector } from "./ToneSelector";
 import { GeneratedPost } from "./GeneratedPost";
 import { PostCardSkeleton } from "./PostCardSkeleton";
-import { motion } from "framer-motion";
 
 interface BriefData {
   title: string | null;
@@ -397,14 +396,8 @@ export function NoisebriefContent() {
       </section>
 
       {brief && brief.sources.length > 0 && (
-        <motion.section
-          layout={false}
-          className="mb-6 min-w-0"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: summaryComplete ? 1 : 0 }}
-          transition={{ duration: 0.3 }}
-          viewport={{ once: true }}
-          style={{ willChange: "transform" }}
+        <section
+          className={`mb-6 min-w-0 section-reveal ${summaryComplete ? "section-reveal-visible" : ""}`}
         >
           <h2
             className="mb-3 font-heading text-base font-semibold text-zinc-400 sm:text-lg"
@@ -417,18 +410,12 @@ export function NoisebriefContent() {
             briefDate={brief.date}
             summaryComplete={summaryComplete}
           />
-        </motion.section>
+        </section>
       )}
 
       {brief?.summary && (
-        <motion.section
-          layout={false}
-          className="mb-6 min-w-0"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: sourcesRevealed ? 1 : 0 }}
-          transition={{ duration: 0.3 }}
-          viewport={{ once: true }}
-          style={{ willChange: "transform" }}
+        <section
+          className={`mb-6 min-w-0 section-reveal ${sourcesRevealed ? "section-reveal-visible" : ""}`}
         >
           <h2
             id="make-it-yours"
@@ -456,7 +443,7 @@ export function NoisebriefContent() {
                 <GeneratedPost post={displayPost} />
               ) : null)}
           </div>
-        </motion.section>
+        </section>
       )}
 
         </div>
