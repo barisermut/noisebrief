@@ -10,9 +10,10 @@ export const metadata: Metadata = {
   title: "Noisebrief — Today's tech noise. Briefly.",
   description:
     "Daily one-pager: what happened today in tech? AI-summarized from Hacker News, TechCrunch, The Verge, Wired, and Reddit.",
-  // iOS only: explicit apple-touch-icon so Safari finds it (180×180 in /public). Default favicon/tab icon unchanged (app/icon.svg).
+  // iOS: SVG tab icons often show as placeholder. Use PNG for both so tabs + home screen show the real icon.
   icons: {
-    apple: [{ url: "/apple-touch-icon.png?v=1", sizes: "180x180", type: "image/png" }],
+    icon: [{ url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" }],
+    apple: [{ url: "/apple-touch-icon.png?v=3", sizes: "180x180", type: "image/png" }],
   },
 };
 
