@@ -18,27 +18,38 @@ const syne700Path = path.join(
 
 function main() {
   const repoRoot = path.join(__dirname, "..");
-  const faviconPath = path.join(repoRoot, "public", "favicon-32x32.png");
+  const logoPath = path.join(repoRoot, "public", "apple-touch-icon.png");
   const outPath = path.join(repoRoot, "public", "og-image.png");
 
-  const faviconBuffer = fs.readFileSync(faviconPath);
-  const faviconBase64 = faviconBuffer.toString("base64");
-  const faviconDataUri = `data:image/png;base64,${faviconBase64}`;
+  if (!fs.existsSync(syne700Path)) {
+    throw new Error(`Syne font not found at: ${syne700Path}`);
+  }
+  // eslint-disable-next-line no-console
+  console.log("Syne font:", syne700Path);
 
-  // Logo: 80x80, centered (x = (1200-80)/2 = 560). Place logo so 16px gap above "Noisebrief".
-  // Title "Noisebrief" ~120px font, baseline roughly 100px from top of text. We want block centered.
-  // Logo top y=164, logo bottom 244. Gap 16. Text top 260. Baseline for 120px Syne ~350. Tagline baseline ~410.
+  if (!fs.existsSync(logoPath)) {
+    throw new Error(`Logo not found at: ${logoPath}`);
+  }
+
+  const logoBuffer = fs.readFileSync(logoPath);
+  const logoBase64 = logoBuffer.toString("base64");
+  const logoDataUri = `data:image/png;base64,${logoBase64}`;
+
+  // Logo: 180x180 source scaled to 80x80 in SVG (sharp at display size). Centered, 16px gap above title.
+  // Title 140px, tagline 40px. Layout: logo y=140, bottom 220, gap 16, title baseline ~368, tagline ~422.
   const logoX = (W - 80) / 2;
-  const logoY = 164;
-  const titleBaseline = 350;
-  const taglineBaseline = 410;
+  const logoY = 140;
+  const titleBaseline = 368;
+  const taglineBaseline = 422;
+  const titleFontSize = 140;
+  const taglineFontSize = 40;
 
   const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <rect width="${W}" height="${H}" fill="#0a0a0f"/>
-  <image href="${faviconDataUri}" x="${logoX}" y="${logoY}" width="80" height="80"/>
-  <text x="${W / 2}" y="${titleBaseline}" text-anchor="middle" fill="white" font-size="120" font-weight="700" font-family="Syne">Noisebrief</text>
-  <text x="${W / 2}" y="${taglineBaseline}" text-anchor="middle" fill="#00d4aa" font-size="36" font-family="Syne">Today's tech noise. Briefly.</text>
+  <image href="${logoDataUri}" x="${logoX}" y="${logoY}" width="80" height="80"/>
+  <text x="${W / 2}" y="${titleBaseline}" text-anchor="middle" fill="white" font-size="${titleFontSize}" font-weight="700" font-family="Syne">Noisebrief</text>
+  <text x="${W / 2}" y="${taglineBaseline}" text-anchor="middle" fill="#00d4aa" font-size="${taglineFontSize}" font-family="Syne">Today's tech noise. Briefly.</text>
 </svg>
 `.trim();
 
