@@ -32,7 +32,7 @@ export default function RootLayout({
         <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
-      <body className="min-h-screen min-w-0 bg-[#0a0a0f] text-zinc-200 font-sans antialiased noise-overlay">
+      <body className="min-h-full min-w-0 bg-[#0a0a0f] text-zinc-200 font-sans antialiased noise-overlay">
         {children}
         <Analytics />
       </body>

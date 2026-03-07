@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { motion } from "framer-motion";
 
 interface TypewriterParagraphsProps {
   paragraphs: string[];
@@ -201,16 +200,7 @@ export function TypewriterParagraphs({
       {paragraphIndex < paragraphs.length && (
         <p className="mb-4 last:mb-0">
           {displayed}
-          {!allDone && (
-            <motion.span
-              layout={false}
-              animate={{ opacity: [1, 0] }}
-              transition={{ duration: 0.5, repeat: Infinity }}
-              style={{ willChange: "transform" }}
-            >
-              |
-            </motion.span>
-          )}
+          {!allDone && <span className="cursor-blink">|</span>}
         </p>
       )}
     </div>

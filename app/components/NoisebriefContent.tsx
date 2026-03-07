@@ -240,7 +240,7 @@ export function NoisebriefContent() {
     });
 
   return (
-    <div className="flex min-h-screen min-w-0 flex-col">
+    <div className="flex min-h-full min-w-0 flex-col">
       <main className="flex-1 min-w-0">
         <div className="relative z-0 mx-auto min-w-0 max-w-2xl px-4 pb-4 pt-6 sm:px-4">
           <header className="mb-4 min-w-0">

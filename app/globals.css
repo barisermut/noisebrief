@@ -131,6 +131,20 @@
   }
 }
 
+/* Cursor blink: CSS-only so it doesn't fight scroll on iOS */
+.cursor-blink {
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
 /* Noise/grain overlay */
 .noise-overlay::before {
   content: "";
