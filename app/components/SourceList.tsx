@@ -189,6 +189,9 @@ export function SourceList({ sources, briefDate, summaryComplete = false }: Sour
                   placeholder="Search sources..."
                   value={search}
                   onChange={(e) => handleSearchChange(e.target.value)}
+                  autoFocus={false}
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="w-full min-w-0 rounded-lg border border-white/10 bg-white/5 py-2.5 pl-9 pr-10 text-sm text-zinc-200 placeholder:text-zinc-500 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
                 />
                 {search && (
@@ -212,33 +215,31 @@ export function SourceList({ sources, briefDate, summaryComplete = false }: Sour
                   </li>
                 ))}
               </ul>
-              {totalPages > 1 && (
-                <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-t border-white/5 pt-3">
-                  <span className="shrink-0 text-xs text-zinc-500">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <div className="flex shrink-0 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      disabled={currentPage <= 1}
-                      className="inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      Previous
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                      disabled={currentPage >= totalPages}
-                      className="inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none"
-                    >
-                      Next
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
+              <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-t border-white/5 pt-3">
+                <span className="shrink-0 text-xs text-zinc-500">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                    className="inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage >= totalPages}
+                    className="inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
           </DialogContent>
         </Dialog>
