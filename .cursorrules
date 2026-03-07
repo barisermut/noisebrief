@@ -77,7 +77,7 @@ cron job, and lets users generate LinkedIn posts in 6 different tones to share i
   /api
     /brief/today      → Serve today's brief from Supabase
     /cron/daily       → Fetch sources + generate summary (cron only)
-    /linkedin/generate → Generate LinkedIn post by tone
+    /post/generate → Generate LinkedIn post by tone
   /components         → Reusable UI components
   /lib                → Supabase client, RSS fetcher, helpers
   /types              → TypeScript interfaces and types

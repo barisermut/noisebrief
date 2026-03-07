@@ -17,6 +17,7 @@ export interface Database {
           summary: string;
           paragraphs: Json | null;
           sources: Json;
+          generated_posts: Json | null;
           created_at: string;
         };
         Insert: {
@@ -26,6 +27,7 @@ export interface Database {
           summary: string;
           paragraphs?: Json | null;
           sources: Json;
+          generated_posts?: Json | null;
           created_at?: string;
         };
         Update: {
@@ -35,6 +37,7 @@ export interface Database {
           summary?: string;
           paragraphs?: Json | null;
           sources?: Json;
+          generated_posts?: Json | null;
           created_at?: string;
         };
       };

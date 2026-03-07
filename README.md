@@ -69,6 +69,14 @@ curl -X GET http://localhost:3000/api/cron/daily \
   -H "authorization: Bearer YOUR_CRON_SECRET"
 ```
 
+### Scripts
+
+- **Favicons** — Regenerate PNG favicons from the source SVG (e.g. after changing `public/favicon.svg`):
+  ```bash
+  node scripts/generate-favicons.js
+  ```
+  Produces `public/favicon-32x32.png` and `public/apple-touch-icon.png` (requires `sharp` in devDependencies).
+
 ## About
 
 Just another side project by an eager PM learning to build with Cursor.
