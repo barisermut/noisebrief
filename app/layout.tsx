@@ -6,11 +6,18 @@ import "@fontsource/syne/600.css";
 import "@fontsource/syne/700.css";
 import "./globals.css";
 
-// Favicon: same as my-website — only app/icon.svg, no metadata.icons override.
 export const metadata: Metadata = {
   title: "Noisebrief — Today's tech noise. Briefly.",
   description:
     "Daily one-pager: what happened today in tech? AI-summarized from Hacker News, TechCrunch, The Verge, Wired, and Reddit.",
+  // Explicit static files from /public so every browser finds the icon (no file-convention magic).
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({

@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Copy, FileText } from "lucide-react";
-import { motion } from "framer-motion";
 
 interface GeneratedPostProps {
   post: string;
@@ -27,18 +26,14 @@ export function GeneratedPost({ post }: GeneratedPostProps) {
       if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
       copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
     } catch {
-      setCopyError("Couldn’t copy. Please try again.");
+      setCopyError("Couldn't copy. Please try again.");
     }
   };
 
   return (
-    <motion.div
-      layout={false}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
+    <div
+      className="post-card-enter min-w-0 rounded-xl border border-white/10 border-l-4 border-l-teal-400 bg-[#13131a] p-3 sm:p-4"
       style={{ willChange: "transform" }}
-      className="min-w-0 rounded-xl border border-white/10 border-l-4 border-l-teal-400 bg-[#13131a] p-3 sm:p-4"
     >
       <div className="mb-3 flex min-w-0 items-center gap-2">
         <FileText className="h-4 w-4 shrink-0 text-teal-400" />
@@ -55,8 +50,7 @@ export function GeneratedPost({ post }: GeneratedPostProps) {
         {!copied && <Copy className="h-4 w-4 shrink-0" />}
         {copied ? "Copied ✓" : "Copy & Share"}
       </button>
-      {/* <ShareLinkedIn /> — re-enable in V2 */}
       {copyError && <p className="mt-2 text-xs text-red-400">{copyError}</p>}
-    </motion.div>
+    </div>
   );
 }
