@@ -93,7 +93,9 @@ export function NoisebriefContent() {
 
   const fetchBrief = useCallback(async () => {
     try {
-      const res = await fetch("/api/brief/today");
+      const res = await fetch("/api/brief/today", {
+        signal: AbortSignal.timeout(15_000),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to load brief");
       const nextBrief: BriefData = {
@@ -124,7 +126,11 @@ export function NoisebriefContent() {
       if (process.env.NODE_ENV === "development") {
         console.error("Brief fetch error:", e);
       }
-      setError("Something went wrong loading today's brief. Please refresh.");
+      const message =
+        e instanceof Error && e.name === "AbortError"
+          ? "Request took too long. Please refresh."
+          : "Something went wrong loading today's brief. Please refresh.";
+      setError(message);
       setBrief({
         title: null,
         summary: "",
@@ -198,6 +204,7 @@ export function NoisebriefContent() {
             summary: brief.summary,
             briefDate: brief.date,
           }),
+          signal: AbortSignal.timeout(35_000),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Failed to generate");
@@ -206,7 +213,11 @@ export function NoisebriefContent() {
         if (process.env.NODE_ENV === "development") {
           console.error("LinkedIn generate error:", e);
         }
-        setGenerateError("Couldn't generate the post. Please try again.");
+        const message =
+          e instanceof Error && e.name === "AbortError"
+            ? "Request took too long. Please try again."
+            : "Couldn't generate the post. Please try again.";
+        setGenerateError(message);
       } finally {
         setGeneratingTone(null);
       }
@@ -326,11 +337,16 @@ export function NoisebriefContent() {
               Skip animation →
             </button>
           )}
-          {!loading && !error && brief?.summary && (summaryComplete || restoredFromCache) && !makeItYoursVisible && (
+          {!loading && !error && brief?.summary && (summaryComplete || restoredFromCache) && (
             <button
               type="button"
               onClick={() => document.getElementById("make-it-yours")?.scrollIntoView({ behavior: "smooth" })}
               className="min-h-[44px] min-w-[44px] shrink-0 cursor-pointer rounded text-sm text-zinc-500 transition-colors hover:text-[#00d4aa] sm:min-w-0 sm:px-2"
+              style={{
+                transition: "opacity 0.3s ease",
+                opacity: makeItYoursVisible ? 1 : 0,
+                pointerEvents: makeItYoursVisible ? "auto" : "none",
+              }}
             >
               Make it yours ↓
             </button>

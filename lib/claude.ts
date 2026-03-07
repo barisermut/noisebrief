@@ -47,11 +47,15 @@ ${articles}
 Return only the JSON object, nothing else.`;
 
   const anthropic = getAnthropic();
-  const message = await anthropic.messages.create({
-    model: SONNET_MODEL,
-    max_tokens: 1000,
-    messages: [{ role: "user", content: prompt }],
-  });
+  // Timeout so cron doesn't hang; leave buffer under Vercel maxDuration 60s
+  const message = await anthropic.messages.create(
+    {
+      model: SONNET_MODEL,
+      max_tokens: 1000,
+      messages: [{ role: "user", content: prompt }],
+    },
+    { signal: AbortSignal.timeout(55_000) }
+  );
 
   const text =
     message.content
@@ -132,11 +136,14 @@ ${guidelines}
 Return only the post text. No preamble, no explanation, no quotes around the post.`;
 
   const anthropic = getAnthropic();
-  const message = await anthropic.messages.create({
-    model: HAIKU_MODEL,
-    max_tokens: 250,
-    messages: [{ role: "user", content: prompt }],
-  });
+  const message = await anthropic.messages.create(
+    {
+      model: HAIKU_MODEL,
+      max_tokens: 250,
+      messages: [{ role: "user", content: prompt }],
+    },
+    { signal: AbortSignal.timeout(30_000) }
+  );
 
   const text =
     message.content

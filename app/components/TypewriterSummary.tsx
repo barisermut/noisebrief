@@ -111,7 +111,7 @@ export function TypewriterSummary({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       viewport={{ once: true }}
-      style={{ willChange: "transform" }}
+      style={{ willChange: "opacity" }}
       className={className}
     >
       {skipToEnd || skipRef?.current === true ? text : displayed}
@@ -120,7 +120,7 @@ export function TypewriterSummary({
           layout={false}
           animate={{ opacity: [1, 0] }}
           transition={{ duration: 0.5, repeat: Infinity }}
-          style={{ willChange: "transform" }}
+          style={{ willChange: "opacity" }}
         >
           |
         </motion.span>
