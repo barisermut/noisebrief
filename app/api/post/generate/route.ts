@@ -77,7 +77,6 @@ export async function POST(request: NextRequest) {
 
     if (process.env.NODE_ENV === "development") {
       console.log("Supabase select result:", data);
-      if (data?.date != null) console.log("Stored date format:", data.date, "query date:", today);
     }
 
     const row = data as (Pick<DailyBriefRow, "generated_posts"> & { date?: string }) | null;
