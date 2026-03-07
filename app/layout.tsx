@@ -27,6 +27,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark overflow-x-hidden">
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+      </head>
       <body className="min-h-screen min-w-0 bg-[#0a0a0f] text-zinc-200 font-sans antialiased noise-overlay overflow-x-hidden">
         {children}
         <Analytics />

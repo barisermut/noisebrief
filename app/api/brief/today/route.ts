@@ -84,7 +84,9 @@ export async function GET() {
       isFallback: false,
     });
   } catch {
-    console.error("Brief today error");
+    if (process.env.NODE_ENV === "development") {
+      console.error("Brief today error");
+    }
     return NextResponse.json(
       {
         title: null,
