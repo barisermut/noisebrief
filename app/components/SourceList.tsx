@@ -177,7 +177,7 @@ export function SourceList({ sources, briefDate, summaryComplete = false }: Sour
           </DialogTrigger>
           <DialogContent
             onOpenAutoFocus={(e) => e.preventDefault()}
-            className="fixed inset-x-0 bottom-0 top-auto z-50 mx-0 flex h-[90vh] max-h-[90vh] w-full max-w-none flex-col translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-t-xl border-t border-zinc-800 bg-[#13131a] p-4 text-zinc-200 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[90vh] sm:mx-4 sm:max-w-2xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:border sm:p-6"
+            className="sources-modal-content fixed inset-x-0 bottom-0 top-auto z-50 mx-0 flex w-full max-w-none flex-col translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-t-xl border-t border-zinc-800 bg-[#13131a] p-4 text-zinc-200 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:mx-4 sm:max-w-2xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:border sm:p-6"
           >
             <DialogHeader className="shrink-0">
               <DialogTitle className="pr-8 text-lg font-semibold text-white sm:pr-0">
@@ -206,8 +206,10 @@ export function SourceList({ sources, briefDate, summaryComplete = false }: Sour
                   </button>
                 )}
               </div>
-              <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden pr-1"
-                style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
+              <ul
+                className="mt-2 min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden pr-1"
+                style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}
+              >
                 {paginated.map((s, i) => (
                   <li
                     key={`${s.url}-${s.publishedAt}-${i}`}
@@ -217,7 +219,16 @@ export function SourceList({ sources, briefDate, summaryComplete = false }: Sour
                   </li>
                 ))}
               </ul>
-              <div className="flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-2 border-t border-white/5 pt-3">
+              <div
+                className="flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-2 border-t border-white/5"
+                style={{
+                  position: "sticky",
+                  bottom: 0,
+                  backgroundColor: "#13131a",
+                  paddingBottom: "max(env(safe-area-inset-bottom), 12px)",
+                  paddingTop: "12px",
+                }}
+              >
                 <span className="shrink-0 text-xs text-zinc-500">
                   Page {currentPage} of {totalPages}
                 </span>

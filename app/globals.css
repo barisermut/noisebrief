@@ -154,6 +154,20 @@
   }
 }
 
+/* Sources modal: iOS safe area so pagination isn't hidden behind browser bar */
+.sources-modal-content {
+  height: calc(85vh - env(safe-area-inset-bottom));
+  max-height: calc(85vh - env(safe-area-inset-bottom));
+  padding-bottom: max(env(safe-area-inset-bottom), 16px);
+}
+@media (min-width: 640px) {
+  .sources-modal-content {
+    height: auto;
+    max-height: 90vh;
+    padding-bottom: 1.5rem;
+  }
+}
+
 /* Noise/grain overlay */
 .noise-overlay::before {
   content: "";
