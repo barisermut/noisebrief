@@ -83,12 +83,18 @@ export function NoisebriefContent() {
   const [generatingTone, setGeneratingTone] = useState<Tone | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [makeItYoursVisible, setMakeItYoursVisible] = useState(false);
+  const makeItYoursVisibleRef = useRef(false);
 
   useEffect(() => {
     const el = document.getElementById("make-it-yours");
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([entry]) => setMakeItYoursVisible(entry.isIntersecting),
+      ([entry]) => {
+        const next = entry.isIntersecting;
+        if (next === makeItYoursVisibleRef.current) return;
+        makeItYoursVisibleRef.current = next;
+        setMakeItYoursVisible(next);
+      },
       { threshold: 0.1 }
     );
     obs.observe(el);
