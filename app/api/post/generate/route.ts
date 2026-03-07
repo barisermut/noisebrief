@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSupabaseAdmin } from "@/lib/supabase";
 import { generateLinkedInPost } from "@/lib/claude";
+import type { Database } from "@/types/supabase";
 import type { Tone } from "@/types";
+
+type DailyBriefRow = Database["public"]["Tables"]["daily_briefs"]["Row"];
 
 const TONES: Tone[] = [
   "Quirky",
@@ -34,6 +38,9 @@ function truncatePostWithHashtags(post: string, maxLen: number): string {
   return body + suffix;
 }
 
+/** Type for generated_posts jsonb: tone -> post text */
+type GeneratedPostsMap = Record<string, string>;
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -57,16 +64,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const today = new Date().toISOString().slice(0, 10);
+    const supabase = getSupabaseAdmin();
+
+    const { data } = await supabase
+      .from("daily_briefs")
+      .select("generated_posts")
+      .eq("date", today)
+      .maybeSingle();
+
+    const row = data as Pick<DailyBriefRow, "generated_posts"> | null;
+    const cached = (row?.generated_posts as GeneratedPostsMap | null) ?? {};
+    if (cached[tone]) {
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[post/generate] Cache hit for tone "${tone}", skipping Claude`);
+      }
+      return NextResponse.json({ post: cached[tone] });
+    }
+
     let post = await generateLinkedInPost(summary, tone);
     if (post.length > POST_MAX_CHARS) {
       if (process.env.NODE_ENV === "development") {
-        console.warn(`[linkedin/generate] Post exceeded ${POST_MAX_CHARS} chars (${post.length}), truncating.`);
+        console.warn(`[post/generate] Post exceeded ${POST_MAX_CHARS} chars (${post.length}), truncating.`);
       }
       post = truncatePostWithHashtags(post, POST_MAX_CHARS);
     }
+
+    const updatedPosts: GeneratedPostsMap = { ...cached, [tone]: post };
+    type DailyBriefUpdate = Database["public"]["Tables"]["daily_briefs"]["Update"];
+    const table = supabase.from("daily_briefs");
+    // Supabase builder can infer update() param as never; payload matches DailyBriefUpdate
+    // @ts-expect-error TS inference bug with narrow Update payload
+    await table.update({ generated_posts: updatedPosts } as DailyBriefUpdate).eq("date", today);
+
     return NextResponse.json({ post });
   } catch (err) {
-    console.error("LinkedIn generate error:", err);
+    console.error("Post generate error:", err);
     return NextResponse.json(
       { error: "Failed to generate post" },
       { status: 500 }

@@ -7,12 +7,14 @@ create table if not exists daily_briefs (
   summary text not null,
   paragraphs jsonb,
   sources jsonb not null,
+  generated_posts jsonb,
   created_at timestamp with time zone default now()
 );
 
 -- For existing tables, add new columns if missing
 alter table public.daily_briefs add column if not exists title text;
 alter table public.daily_briefs add column if not exists paragraphs jsonb;
+alter table public.daily_briefs add column if not exists generated_posts jsonb;
 
 -- Optional: RLS (allow public read, restrict write to service role)
 alter table daily_briefs enable row level security;

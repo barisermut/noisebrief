@@ -187,7 +187,7 @@ export function NoisebriefContent() {
 
       setGeneratingTone(tone);
       try {
-        const res = await fetch("/api/linkedin/generate", {
+        const res = await fetch("/api/post/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
