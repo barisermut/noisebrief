@@ -125,7 +125,9 @@ export function NoisebriefContent() {
         // ignore
       }
     } catch (e) {
-      console.error("Brief fetch error:", e);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Brief fetch error:", e);
+      }
       setError("Something went wrong loading today's brief. Please refresh.");
       setBrief({
         title: null,
@@ -205,7 +207,9 @@ export function NoisebriefContent() {
         if (!res.ok) throw new Error(data.error ?? "Failed to generate");
         setPostCache((prev) => new Map(prev).set(tone, data.post));
       } catch (e) {
-        console.error("LinkedIn generate error:", e);
+        if (process.env.NODE_ENV === "development") {
+          console.error("LinkedIn generate error:", e);
+        }
         setGenerateError("Couldn't generate the post. Please try again.");
       } finally {
         setGeneratingTone(null);

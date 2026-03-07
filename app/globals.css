@@ -87,9 +87,13 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    -webkit-overflow-scrolling: touch;
   }
   body {
     @apply bg-background text-foreground;
+    /* GPU layer for main scroll container to reduce iOS momentum-scroll jank */
+    will-change: transform;
+    transform: translateZ(0);
   }
 }
 

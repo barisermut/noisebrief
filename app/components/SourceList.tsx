@@ -153,7 +153,7 @@ export function SourceList({ sources, briefDate, summaryComplete = false }: Sour
       <ul className="space-y-2">
         {displaySources.map((s, i) => (
           <SourceItem
-            key={`${s.url}-${i}`}
+            key={`${s.url}-${s.publishedAt}-${i}`}
             source={s}
             index={i}
             animate
@@ -202,7 +202,7 @@ export function SourceList({ sources, briefDate, summaryComplete = false }: Sour
               <ul className="max-h-[60vh] space-y-2 overflow-y-auto overflow-x-hidden pr-1">
                 {paginated.map((s, i) => (
                   <li
-                    key={`${s.url}-${i}`}
+                    key={`${s.url}-${s.publishedAt}-${i}`}
                     className="flex min-w-0 items-center gap-2 overflow-hidden rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 transition-colors hover:bg-white/[0.04] sm:gap-3"
                   >
                     <SourceItemRow source={s} truncateTitle />

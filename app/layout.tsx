@@ -6,11 +6,14 @@ import "@fontsource/syne/600.css";
 import "@fontsource/syne/700.css";
 import "./globals.css";
 
-// Favicon: Next.js serves app/icon.svg and app/apple-icon.png automatically (same setup as barisermut.com).
 export const metadata: Metadata = {
   title: "Noisebrief — Today's tech noise. Briefly.",
   description:
     "Daily one-pager: what happened today in tech? AI-summarized from Hacker News, TechCrunch, The Verge, Wired, and Reddit.",
+  // iOS only: explicit apple-touch-icon so Safari finds it (180×180 in /public). Default favicon/tab icon unchanged (app/icon.svg).
+  icons: {
+    apple: [{ url: "/apple-touch-icon.png?v=1", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({

@@ -88,7 +88,9 @@ export async function POST(request: NextRequest) {
     // All reads and writes use service role client; anon client cannot write rows.
     const supabaseAdmin = getSupabaseAdmin();
 
-    console.log("Checking Supabase cache for tone:", tone, "briefDate:", briefDate);
+    if (process.env.NODE_ENV === "development") {
+      console.log("Checking Supabase cache for tone:", tone, "briefDate:", briefDate);
+    }
     const { data } = await supabaseAdmin
       .from("daily_briefs")
       .select("generated_posts, date")
@@ -108,7 +110,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ post: cached[tone] });
     }
 
-    console.log("Cache miss - generating with Claude");
+    if (process.env.NODE_ENV === "development") {
+      console.log("Cache miss - generating with Claude");
+    }
     let generatedPost = await generateLinkedInPost(summary, tone);
     if (generatedPost.length > POST_MAX_CHARS) {
       if (process.env.NODE_ENV === "development") {
@@ -117,7 +121,9 @@ export async function POST(request: NextRequest) {
       generatedPost = truncatePostWithHashtags(generatedPost, POST_MAX_CHARS);
     }
 
-    console.log("Saving to Supabase...");
+    if (process.env.NODE_ENV === "development") {
+      console.log("Saving to Supabase...");
+    }
     const { error: rpcError } = await supabaseAdmin.rpc("set_generated_post_if_missing", {
       brief_date: briefDate,
       tone_key: tone,
@@ -125,17 +131,20 @@ export async function POST(request: NextRequest) {
     });
     if (rpcError) {
       // ACTION REQUIRED: If function not found, run supabase/migrations/set_generated_post_if_missing.sql in Supabase SQL editor.
-      console.error("Supabase RPC set_generated_post_if_missing error:", rpcError);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Supabase RPC set_generated_post_if_missing error:", rpcError);
+      }
       return NextResponse.json(
         { error: "Failed to save generated post" },
         { status: 500 }
       );
     }
-    console.log("Saved successfully");
 
     return NextResponse.json({ post: generatedPost });
   } catch (err) {
-    console.error("Post generate error:", err);
+    if (process.env.NODE_ENV === "development") {
+      console.error("Post generate error:", err);
+    }
     return NextResponse.json(
       { error: "Failed to generate post" },
       { status: 500 }

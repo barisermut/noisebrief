@@ -6,6 +6,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 export const maxDuration = 60;
 
 export async function GET(request: Request) {
+  // Vercel Cron: send Authorization: Bearer <CRON_SECRET>; validate before any work.
   const cronSecret = request.headers.get("authorization");
   const expected = `Bearer ${process.env.CRON_SECRET ?? ""}`;
   if (cronSecret !== expected || !process.env.CRON_SECRET) {
