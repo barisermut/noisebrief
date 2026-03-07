@@ -33,7 +33,7 @@ export function GeneratedPost({ post }: GeneratedPostProps) {
   return (
     <div
       className="post-card-enter min-w-0 rounded-xl border border-white/10 border-l-4 border-l-teal-400 bg-[#13131a] p-3 sm:p-4"
-      style={{ willChange: "transform" }}
+      style={{ willChange: "transform", transition: "opacity 0.2s ease-out, transform 0.2s ease-out" }}
     >
       <div className="mb-3 flex min-w-0 items-center gap-2">
         <FileText className="h-4 w-4 shrink-0 text-teal-400" />
