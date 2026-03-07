@@ -35,10 +35,11 @@ function main() {
   const logoBase64 = logoBuffer.toString("base64");
   const logoDataUri = `data:image/png;base64,${logoBase64}`;
 
-  // Logo: 180x180 source scaled to 80x80 in SVG (sharp at display size). Centered, 16px gap above title.
-  // Title 140px, tagline 40px. Layout: logo y=140, bottom 220, gap 16, title baseline ~368, tagline ~422.
-  const logoX = (W - 80) / 2;
-  const logoY = 140;
+  // Logo: 180x180 source scaled to 120x120. Centered x=(1200-120)/2=540, 16px gap above title.
+  // Logo y=120 so bottom 240, gap 16, title baseline 368, tagline 422.
+  const logoSize = 120;
+  const logoX = (W - logoSize) / 2;
+  const logoY = 120;
   const titleBaseline = 368;
   const taglineBaseline = 422;
   const titleFontSize = 140;
@@ -47,7 +48,7 @@ function main() {
   const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <rect width="${W}" height="${H}" fill="#0a0a0f"/>
-  <image href="${logoDataUri}" x="${logoX}" y="${logoY}" width="80" height="80"/>
+  <image href="${logoDataUri}" x="${logoX}" y="${logoY}" width="${logoSize}" height="${logoSize}"/>
   <text x="${W / 2}" y="${titleBaseline}" text-anchor="middle" fill="white" font-size="${titleFontSize}" font-weight="700" font-family="Syne">Noisebrief</text>
   <text x="${W / 2}" y="${taglineBaseline}" text-anchor="middle" fill="#00d4aa" font-size="${taglineFontSize}" font-family="Syne">Today's tech noise. Briefly.</text>
 </svg>
