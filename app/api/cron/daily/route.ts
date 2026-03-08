@@ -2,8 +2,27 @@ import { NextResponse } from "next/server";
 import { fetchAllSources } from "@/lib/fetchAllSources";
 import { generateDailySummary } from "@/lib/claude";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import type { Source } from "@/types";
 
 export const maxDuration = 60;
+
+/** Extract URLs from yesterday's brief sources for deduplication. */
+async function getYesterdayBriefUrls(): Promise<Set<string>> {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayDate = yesterday.toISOString().slice(0, 10);
+  const { data } = await getSupabaseAdmin()
+    .from("daily_briefs")
+    .select("sources")
+    .eq("date", yesterdayDate)
+    .maybeSingle();
+  if (!data?.sources || !Array.isArray(data.sources)) return new Set();
+  const urls = new Set<string>();
+  for (const s of data.sources as Array<{ url?: string }>) {
+    if (typeof s?.url === "string") urls.add(s.url);
+  }
+  return urls;
+}
 
 export async function GET(request: Request) {
   // Vercel Cron: send Authorization: Bearer <CRON_SECRET>; validate before any work.
@@ -18,7 +37,9 @@ export async function GET(request: Request) {
     try {
       sources = await fetchAllSources();
     } catch {
-      console.error("Cron error after RSS fetch");
+      if (process.env.NODE_ENV === "development") {
+        console.error("Cron error after RSS fetch");
+      }
       throw new Error("RSS fetch failed");
     }
 
@@ -29,18 +50,37 @@ export async function GET(request: Request) {
       );
     }
 
+    // Exclude articles that appeared in yesterday's brief to avoid repeated headlines.
+    let yesterdayUrls: Set<string>;
+    try {
+      yesterdayUrls = await getYesterdayBriefUrls();
+    } catch {
+      yesterdayUrls = new Set();
+    }
+    let sourcesToUse = sources.filter(
+      (s: Source) => !yesterdayUrls.has(s.url)
+    );
+    if (sourcesToUse.length === 0) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("All sources duplicated from yesterday, using full list");
+      }
+      sourcesToUse = sources;
+    }
+
     let title: string;
     let summary: string;
     let paragraphs: string[];
     let usedSources: Awaited<ReturnType<typeof generateDailySummary>>["usedSources"];
     try {
-      const result = await generateDailySummary(sources);
+      const result = await generateDailySummary(sourcesToUse);
       title = result.title;
       summary = result.summary;
       paragraphs = result.paragraphs;
       usedSources = result.usedSources;
     } catch {
-      console.error("Cron error after Claude API call");
+      if (process.env.NODE_ENV === "development") {
+        console.error("Cron error after Claude API call");
+      }
       throw new Error("Claude API failed");
     }
 
@@ -62,12 +102,16 @@ export async function GET(request: Request) {
       );
       supabaseError = result.error;
     } catch {
-      console.error("Cron error after Supabase insert");
+      if (process.env.NODE_ENV === "development") {
+        console.error("Cron error after Supabase insert");
+      }
       throw new Error("Supabase insert failed");
     }
 
     if (supabaseError) {
-      console.error("Supabase upsert error");
+      if (process.env.NODE_ENV === "development") {
+        console.error("Supabase upsert error");
+      }
       return NextResponse.json(
         { error: "Failed to store brief" },
         { status: 500 }
@@ -81,7 +125,9 @@ export async function GET(request: Request) {
       sourcesCount: usedSources.length,
     });
   } catch {
-    console.error("Cron error");
+    if (process.env.NODE_ENV === "development") {
+      console.error("Cron error");
+    }
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

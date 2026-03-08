@@ -65,7 +65,9 @@ export async function fetchRssFeed(
         clearTimeout(timeoutId);
       }
       if (!response.ok) {
-        console.error(`[${sourceName}] failed: HTTP ${response.status}`);
+        if (process.env.NODE_ENV === "development") {
+          console.error(`[${sourceName}] failed: HTTP ${response.status}`);
+        }
         return [];
       }
       const xml = await response.text();
@@ -85,7 +87,9 @@ export async function fetchRssFeed(
         clearTimeout(timeoutId);
       }
       if (!response.ok) {
-        console.error(`[${sourceName}] failed: HTTP ${response.status}`);
+        if (process.env.NODE_ENV === "development") {
+          console.error(`[${sourceName}] failed: HTTP ${response.status}`);
+        }
         return [];
       }
       const xml = await response.text();
@@ -120,7 +124,9 @@ export async function fetchRssFeed(
     }
     return result;
   } catch (err) {
-    console.error(`[${sourceName}] failed:`, err);
+    if (process.env.NODE_ENV === "development") {
+      console.error(`[${sourceName}] failed:`, err);
+    }
     return [];
   }
 }

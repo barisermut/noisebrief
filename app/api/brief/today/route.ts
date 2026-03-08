@@ -8,12 +8,23 @@ export async function GET() {
   try {
     const admin = getSupabaseAdmin();
 
-    // 1. Try today's brief first
-    const { data: todayData, error: todayError } = await admin
-      .from("daily_briefs")
-      .select("date, title, summary, paragraphs, sources, created_at")
-      .eq("date", today)
-      .maybeSingle();
+    // Fetch today and latest in parallel; then prefer today if present.
+    const [todayResult, latestResult] = await Promise.all([
+      admin
+        .from("daily_briefs")
+        .select("date, title, summary, paragraphs, sources, created_at")
+        .eq("date", today)
+        .maybeSingle(),
+      admin
+        .from("daily_briefs")
+        .select("date, title, summary, paragraphs, sources, created_at")
+        .order("date", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    const { data: todayData, error: todayError } = todayResult;
+    const { data: latestData, error: latestError } = latestResult;
 
     if (!todayError && todayData) {
       const row = todayData as {
@@ -40,14 +51,6 @@ export async function GET() {
       });
     }
 
-    // 2. Fallback: most recent brief (ORDER BY date DESC LIMIT 1)
-    const { data: latestData, error: latestError } = await admin
-      .from("daily_briefs")
-      .select("date, title, summary, paragraphs, sources, created_at")
-      .order("date", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
     if (!latestError && latestData) {
       const row = latestData as {
         date: string;
@@ -73,7 +76,6 @@ export async function GET() {
       });
     }
 
-    // 3. No briefs in the database at all
     return NextResponse.json({
       title: null,
       summary: null,

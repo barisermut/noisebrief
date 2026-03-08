@@ -181,6 +181,8 @@ export function NoisebriefContent() {
     return () => clearTimeout(t);
   }, [summaryComplete, brief?.sources.length]);
 
+  const handleSummaryComplete = useCallback(() => setSummaryComplete(true), []);
+
   const handleToneSelect = useCallback(
     async (tone: Tone) => {
       setSelectedTone(tone);
@@ -384,7 +386,7 @@ export function NoisebriefContent() {
               <div className="text-base leading-relaxed text-zinc-300 sm:text-lg sm:leading-relaxed">
                 <TypewriterParagraphs
                   paragraphs={brief.paragraphs}
-                  onComplete={() => setSummaryComplete(true)}
+                  onComplete={handleSummaryComplete}
                   skipToEnd={skipRequested}
                   skipRef={skipRef}
                 />
@@ -393,7 +395,7 @@ export function NoisebriefContent() {
               <div className="text-base leading-relaxed text-zinc-300 sm:text-lg sm:leading-relaxed">
                 <TypewriterSummary
                   text={brief.summary}
-                  onComplete={() => setSummaryComplete(true)}
+                  onComplete={handleSummaryComplete}
                   skipToEnd={skipRequested}
                   skipRef={skipRef}
                 />
