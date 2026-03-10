@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const FAVICON_BASE = "https://www.google.com/s2/favicons";
-const DOMAIN_MAX_LENGTH = 253; // max hostname length per RFC
+const DOMAIN_MAX_LENGTH = 253;
 const FETCH_TIMEOUT_MS = 8000;
+const DOMAIN_REGEX = /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*$/;
 
 const DOMAIN_MAP: Record<string, string> = {
   "hnrss.org": "news.ycombinator.com",
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     .replace(/^www\./, "")
     .split("/")[0] ?? domain;
   cleanDomain = DOMAIN_MAP[cleanDomain] ?? cleanDomain;
-  if (cleanDomain.length > DOMAIN_MAX_LENGTH) {
+  if (cleanDomain.length > DOMAIN_MAX_LENGTH || !DOMAIN_REGEX.test(cleanDomain)) {
     return NextResponse.json({ error: "Invalid domain" }, { status: 400 });
   }
 

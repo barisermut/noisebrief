@@ -14,7 +14,7 @@ const REDDIT_SOURCES = [
   "r/artificial",
   "r/singularity",
   "r/tech",
-  "r/ArtificialIntelligence",
+  "r/MachineLearning",
   "r/ProductManagement",
 ];
 const DEFAULT_COLOR = "rgb(0, 212, 170)"; // teal

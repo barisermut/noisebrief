@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import type { Source } from "@/types";
 import { motion } from "framer-motion";
 import { SourceFavicon } from "./SourceFavicon";
@@ -27,7 +27,7 @@ function timeAgo(iso: string): string {
   return d.toLocaleDateString();
 }
 
-function SourceItemRow({
+const SourceItemRow = memo(function SourceItemRow({
   source,
   truncateTitle = false,
 }: {
@@ -56,7 +56,7 @@ function SourceItemRow({
       </span>
     </>
   );
-}
+});
 
 function SourceItem({
   source,

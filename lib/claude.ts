@@ -4,10 +4,14 @@ import type { Source } from "@/types";
 const SONNET_MODEL = "claude-sonnet-4-20250514";
 const HAIKU_MODEL = "claude-haiku-4-5-20251001";
 
+let _anthropic: Anthropic | null = null;
+
 function getAnthropic(): Anthropic {
+  if (_anthropic) return _anthropic;
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("Missing ANTHROPIC_API_KEY");
-  return new Anthropic({ apiKey: key });
+  _anthropic = new Anthropic({ apiKey: key });
+  return _anthropic;
 }
 
 function formatArticles(sources: Source[]): string {
@@ -78,7 +82,12 @@ Articles:`;
       .join("")
       .trim() ?? "";
 
-  const parsed = JSON.parse(text) as { title: string; paragraphs: string[] };
+  let parsed: { title?: string; paragraphs?: unknown };
+  try {
+    parsed = JSON.parse(text) as { title?: string; paragraphs?: unknown };
+  } catch {
+    throw new Error("Claude returned invalid JSON for daily summary");
+  }
   const title = typeof parsed.title === "string" ? parsed.title : "Today's Brief";
   const paragraphs = Array.isArray(parsed.paragraphs)
     ? parsed.paragraphs.filter((p): p is string => typeof p === "string")
