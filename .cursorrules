@@ -159,7 +159,7 @@ CRON_SECRET=
 ## Do Nots
 - Do NOT use Reddit API — RSS only is fine
 - Do NOT call Claude API per user visit
-- Do NOT use localStorage. sessionStorage is allowed only for same-session navigation UX caching — not for persistent data storage.
+- Do NOT use localStorage for persistent data storage, except for user preferences (e.g. theme). sessionStorage is allowed only for same-session navigation UX caching.
 - Do NOT use `<form>` HTML tags
 - Do NOT use generic fonts (Inter, Roboto, Arial)
 - Do NOT expose API keys in client-side code

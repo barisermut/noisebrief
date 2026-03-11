@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/react";
+import { BriefProvider } from "./components/BriefProvider";
+import { ThemeProvider } from "./components/ThemeProvider";
+import { getSiteUrl } from "@/lib/site";
 import "@fontsource/syne/400.css";
-import "@fontsource/syne/500.css";
 import "@fontsource/syne/600.css";
 import "@fontsource/syne/700.css";
 import "./globals.css";
 
-const siteUrl = "https://noisebrief.vercel.app";
+const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Noisebrief — Today's tech noise. Briefly.",
   description:
     "Daily one-pager: what happened today in tech? AI-summarized from Hacker News, TechCrunch, The Verge, Wired, and Reddit.",
@@ -42,15 +45,21 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const themeScript = `(function(){var t=localStorage.getItem('noisebrief-theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}})();`;
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
-      <body className="min-h-full min-w-0 bg-[#0a0a0f] text-zinc-200 font-sans antialiased noise-overlay">
-        {children}
+      <body className="min-h-full min-w-0 font-sans antialiased noise-overlay bg-background text-foreground">
+        <ThemeProvider>
+          <BriefProvider>
+            {children}
+          </BriefProvider>
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

@@ -38,6 +38,14 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Cursor internal tooling (agents, commands — local only)
+.cursor/agents/
+.cursor/commands/
+.cursor/rules/
+
+# Internal planning docs (V2 implementation docs — not for repo)
+docs/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

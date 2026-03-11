@@ -15,14 +15,14 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
   }, [error]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-[#0a0a0f] px-6 text-center">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center">
       <h1
-        className="text-3xl font-bold text-white"
+        className="text-3xl font-bold text-foreground"
         style={{ fontFamily: "var(--font-heading)" }}
       >
         Something went wrong
       </h1>
-      <p className="mt-3 max-w-md text-sm text-zinc-400">
+      <p className="mt-3 max-w-md text-sm text-muted-foreground">
         An unexpected error occurred. Please try refreshing the page.
       </p>
       <button

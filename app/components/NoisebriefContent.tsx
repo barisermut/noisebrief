@@ -1,8 +1,8 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
-import { useEffect, useState, useCallback, useRef } from "react";
-import type { Source, Tone } from "@/types";
+import type { Tone } from "@/types";
 import { TypewriterSummary } from "./TypewriterSummary";
 import { TypewriterParagraphs } from "./TypewriterParagraphs";
 import { SummarySkeleton } from "./SummarySkeleton";
@@ -10,16 +10,9 @@ import { SourceList } from "./SourceList";
 import { ToneSelector } from "./ToneSelector";
 import { GeneratedPost } from "./GeneratedPost";
 import { PostCardSkeleton } from "./PostCardSkeleton";
-
-interface BriefData {
-  title: string | null;
-  summary: string;
-  paragraphs: string[];
-  sources: Source[];
-  generatedAt: string | null;
-  date: string | null;
-  isFallback?: boolean;
-}
+import { BriefDatePicker } from "./BriefDatePicker";
+import { ThemeToggle } from "./ThemeToggle";
+import { useBrief } from "./BriefProvider";
 
 function formatUpdatedAt(iso: string | null): string {
   if (!iso) return "";
@@ -33,220 +26,60 @@ function formatUpdatedAt(iso: string | null): string {
   return d.toLocaleDateString();
 }
 
-// sessionStorage: same-session navigation UX only (restore brief/posts on same-day revisit)
-const BRIEF_STORAGE_KEY = "noisebrief_brief";
-const POSTS_STORAGE_KEY = "noisebrief_posts";
-
-function getTodayDateString(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function loadBriefFromStorage(): BriefData | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = sessionStorage.getItem(BRIEF_STORAGE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw) as BriefData;
-    if (!data || typeof data.date !== "string") return null;
-    return data;
-  } catch {
-    return null;
-  }
-}
-
-function loadPostsFromStorage(): Map<Tone, string> {
-  if (typeof window === "undefined") return new Map();
-  try {
-    const raw = sessionStorage.getItem(POSTS_STORAGE_KEY);
-    if (!raw) return new Map();
-    const obj = JSON.parse(raw) as Record<string, string>;
-    if (!obj || typeof obj !== "object") return new Map();
-    return new Map(Object.entries(obj)) as Map<Tone, string>;
-  } catch {
-    return new Map();
-  }
-}
-
 export function NoisebriefContent() {
-  const [brief, setBrief] = useState<BriefData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [summaryComplete, setSummaryComplete] = useState(false);
-  const [skipRequested, setSkipRequested] = useState(false);
-  const [sourcesRevealed, setSourcesRevealed] = useState(false);
-  const [restoredFromCache, setRestoredFromCache] = useState(false);
-  const skipRef = useRef(false);
-  const [selectedTone, setSelectedTone] = useState<Tone | null>(null);
-  const [postCache, setPostCache] = useState<Map<Tone, string>>(new Map());
-  const postCacheRef = useRef<Map<Tone, string>>(postCache);
-  postCacheRef.current = postCache;
-  const [generatingTone, setGeneratingTone] = useState<Tone | null>(null);
-  const [generateError, setGenerateError] = useState<string | null>(null);
-  const [makeItYoursVisible, setMakeItYoursVisible] = useState(false);
-
-  useEffect(() => {
-    if (sourcesRevealed) {
-      const t = setTimeout(() => setMakeItYoursVisible(true), 300);
-      return () => clearTimeout(t);
-    }
-  }, [sourcesRevealed]);
-
-  const fetchBrief = useCallback(async () => {
-    try {
-      const res = await fetch("/api/brief/today", {
-        signal: AbortSignal.timeout(15_000),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to load brief");
-      const nextBrief: BriefData = {
-        title: data.title ?? null,
-        summary: data.summary ?? "",
-        paragraphs: Array.isArray(data.paragraphs) ? data.paragraphs : [],
-        sources: data.sources ?? [],
-        generatedAt: data.generatedAt ?? null,
-        date: data.date ?? null,
-        isFallback: data.isFallback === true,
-      };
-      setBrief(nextBrief);
-      setError(null);
-      setSummaryComplete(false);
-      setSkipRequested(false);
-      setRestoredFromCache(false);
-      skipRef.current = false;
-      setSourcesRevealed(false);
-      setMakeItYoursVisible(false);
-      setPostCache(new Map());
-      try {
-        sessionStorage.setItem(BRIEF_STORAGE_KEY, JSON.stringify(nextBrief));
-        sessionStorage.removeItem(POSTS_STORAGE_KEY);
-      } catch {
-        // ignore
-      }
-    } catch (e) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Brief fetch error:", e);
-      }
-      const message =
-        e instanceof Error && e.name === "AbortError"
-          ? "Request took too long. Please refresh."
-          : "Something went wrong loading today's brief. Please refresh.";
-      setError(message);
-      setBrief({
-        title: null,
-        summary: "",
-        paragraphs: [],
-        sources: [],
-        generatedAt: null,
-        date: null,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const cached = loadBriefFromStorage();
-    const today = getTodayDateString();
-    if (cached?.date === today && cached.summary) {
-      setBrief(cached);
-      setSummaryComplete(true);
-      setSkipRequested(true);
-      setRestoredFromCache(true);
-      skipRef.current = true;
-      setSourcesRevealed(true);
-      setPostCache(loadPostsFromStorage());
-      setLoading(false);
-      return;
-    }
-    fetchBrief();
-  }, [fetchBrief]);
-
-  useEffect(() => {
-    if (postCache.size === 0) return;
-    try {
-      sessionStorage.setItem(
-        POSTS_STORAGE_KEY,
-        JSON.stringify(Object.fromEntries(postCache))
-      );
-    } catch {
-      // ignore
-    }
-  }, [postCache]);
-
-  useEffect(() => {
-    if (!summaryComplete || !brief?.sources.length) return;
-    const count = Math.min(brief.sources.length, 5);
-    const delay = 300 + count * 80;
-    const t = setTimeout(() => setSourcesRevealed(true), delay);
-    return () => clearTimeout(t);
-  }, [summaryComplete, brief?.sources.length]);
-
-  const handleSummaryComplete = useCallback(() => setSummaryComplete(true), []);
-
-  const handleToneSelect = useCallback(
-    async (tone: Tone) => {
-      setSelectedTone(tone);
-      setGenerateError(null);
-
-      const cached = postCacheRef.current.get(tone);
-      if (cached) return;
-
-      if (!brief?.date) {
-        setGenerateError("No brief date available.");
-        return;
-      }
-
-      setGeneratingTone(tone);
-      try {
-        const res = await fetch("/api/post/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tone,
-            summary: brief.summary,
-            briefDate: brief.date,
-          }),
-          signal: AbortSignal.timeout(35_000),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "Failed to generate");
-        setPostCache((prev) => new Map(prev).set(tone, data.post));
-      } catch (e) {
-        if (process.env.NODE_ENV === "development") {
-          console.error("LinkedIn generate error:", e);
-        }
-        const message =
-          e instanceof Error && e.name === "AbortError"
-            ? "Request took too long. Please try again."
-            : "Couldn't generate the post. Please try again.";
-        setGenerateError(message);
-      } finally {
-        setGeneratingTone(null);
-      }
-    },
-    [brief?.summary, brief?.date]
-  );
+  const {
+    brief,
+    loading,
+    error,
+    summaryComplete,
+    skipRequested,
+    sourcesRevealed,
+    restoredFromCache,
+    skipRef,
+    selectedTone,
+    postCache,
+    generatingTone,
+    generateError,
+    makeItYoursVisible,
+    handleSummaryComplete,
+    handleToneSelect,
+    setSkipRequested,
+    setSummaryComplete,
+    setSourcesRevealed,
+    selectedDate,
+    isHistorical,
+    navigateToDate,
+  } = useBrief();
 
   const displayPost =
     selectedTone !== null ? postCache.get(selectedTone) ?? null : null;
 
-  const updatedAtLabel = brief?.generatedAt
-    ? formatUpdatedAt(brief.generatedAt)
-    : "";
-  const updatedDateFormatted = brief?.generatedAt
-    ? new Date(brief.generatedAt).toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
-    : "";
-  const briefDateBadge =
-    brief?.date &&
-    new Date(brief.date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
+  const updatedAtLabel = useMemo(
+    () => (brief?.generatedAt ? formatUpdatedAt(brief.generatedAt) : ""),
+    [brief?.generatedAt]
+  );
+  const updatedDateFormatted = useMemo(
+    () =>
+      brief?.generatedAt
+        ? new Date(brief.generatedAt).toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })
+        : "",
+    [brief?.generatedAt]
+  );
+  const briefDateBadge = useMemo(
+    () =>
+      brief?.date
+        ? new Date(brief.date + "T12:00:00").toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })
+        : null,
+    [brief?.date]
+  );
 
   return (
     <div className="flex min-h-full min-w-0 flex-col">
@@ -292,20 +125,20 @@ export function NoisebriefContent() {
             />
           </svg>
           <h1
-            className="font-heading text-2xl font-bold tracking-tight text-white sm:text-3xl md:text-4xl"
+            className="font-heading text-2xl font-bold tracking-tight text-[#1a1a1a] dark:text-white sm:text-3xl md:text-4xl"
             style={{ fontFamily: "var(--font-heading)" }}
           >
             Noisebrief
           </h1>
         </div>
-        <p className="mt-1 break-words text-sm text-zinc-500">
+        <p className="mt-1 break-words text-sm text-[#6b6b6b] dark:text-zinc-500">
           Today&apos;s tech noise. Briefly.
         </p>
         {!loading && !error && brief?.generatedAt && (
-          <p className="mt-1 break-words text-xs text-zinc-500">
+          <p className="mt-1 break-words text-xs text-[#6b6b6b] dark:text-zinc-500">
             Updated {updatedDateFormatted} · {updatedAtLabel}
             {" · "}
-            <span className="text-zinc-600">A fresh brief drops every day at 8AM UTC</span>
+            <span className="text-[#6b6b6b] dark:text-zinc-600">A fresh brief drops every day at 8AM UTC</span>
           </p>
         )}
       </header>
@@ -314,64 +147,89 @@ export function NoisebriefContent() {
         <div className="mb-3 flex min-w-0 flex-wrap items-center justify-between gap-2">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <h2
-              className="font-heading shrink-0 text-base font-semibold text-zinc-400 sm:text-lg"
+              className="font-heading shrink-0 text-base font-semibold text-[#6b6b6b] dark:text-zinc-400 sm:text-lg"
               style={{ fontFamily: "var(--font-heading)" }}
             >
               Latest Brief
             </h2>
             {!loading && !error && brief?.summary && briefDateBadge && (
-              <span className="shrink-0 rounded border border-white/10 bg-[#1a1a2e] px-1.5 py-0.5 text-xs font-medium text-white/80">
-                {briefDateBadge}
-              </span>
+              <>
+                <span className="shrink-0 rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-xs font-medium text-[#1a1a1a]/80 dark:border-white/10 dark:bg-[#1a1a2e] dark:text-white/80">
+                  {briefDateBadge}
+                </span>
+                <BriefDatePicker
+                  selectedDate={selectedDate}
+                  isHistorical={isHistorical}
+                  onSelectDate={navigateToDate}
+                />
+              </>
             )}
           </div>
-          {!loading && !error && brief?.summary && !summaryComplete && !restoredFromCache && (
-            <button
-              type="button"
-              onClick={() => {
-                skipRef.current = true;
-                setSkipRequested(true);
-                setSummaryComplete(true);
-                setSourcesRevealed(true);
-              }}
-              className="min-h-[44px] min-w-[44px] shrink-0 cursor-pointer rounded text-sm text-zinc-500 transition-colors hover:text-[#00d4aa] sm:min-w-0 sm:px-2"
-            >
-              Skip animation →
-            </button>
-          )}
-          {!loading && !error && brief?.summary && (summaryComplete || restoredFromCache) && (
+          <div className="flex items-center self-center min-w-0 shrink-0 gap-2">
+            {!loading && !error && brief?.summary && !summaryComplete && !restoredFromCache && !isHistorical && (
+              <button
+                type="button"
+                onClick={() => {
+                  skipRef.current = true;
+                  setSkipRequested(true);
+                  setSummaryComplete(true);
+                  setSourcesRevealed(true);
+                }}
+                className="min-h-[44px] min-w-[44px] shrink-0 cursor-pointer rounded text-sm text-[#6b6b6b] transition-colors hover:text-[#00d4aa] dark:text-zinc-500 sm:min-w-0 sm:px-2"
+              >
+                Skip animation →
+              </button>
+            )}
+            {!loading && !error && brief?.summary && (summaryComplete || restoredFromCache || isHistorical) && (
+              <button
+                type="button"
+                onClick={() => document.getElementById("make-it-yours")?.scrollIntoView({ behavior: "smooth" })}
+                className="hidden min-h-[44px] min-w-[44px] shrink-0 cursor-pointer rounded text-sm text-[#6b6b6b] transition-colors hover:text-[#00d4aa] dark:text-zinc-500 sm:min-w-0 sm:px-2 md:inline-block"
+                style={{
+                  transition: "opacity 0.3s ease",
+                  opacity: makeItYoursVisible || isHistorical ? 1 : 0,
+                  pointerEvents: makeItYoursVisible || isHistorical ? "auto" : "none",
+                }}
+              >
+                Make it yours ↓
+              </button>
+            )}
+          </div>
+        </div>
+        {!loading && !error && brief?.summary && (summaryComplete || restoredFromCache || isHistorical) && (
+          <div className="mb-3 flex md:hidden">
             <button
               type="button"
               onClick={() => document.getElementById("make-it-yours")?.scrollIntoView({ behavior: "smooth" })}
-              className="min-h-[44px] min-w-[44px] shrink-0 cursor-pointer rounded text-sm text-zinc-500 transition-colors hover:text-[#00d4aa] sm:min-w-0 sm:px-2"
+              className="min-h-[44px] min-w-[44px] shrink-0 cursor-pointer rounded text-left text-sm text-[#6b6b6b] transition-colors hover:text-[#00d4aa] dark:text-zinc-500 sm:min-w-0 sm:px-0"
               style={{
                 transition: "opacity 0.3s ease",
-                opacity: makeItYoursVisible ? 1 : 0,
-                pointerEvents: makeItYoursVisible ? "auto" : "none",
+                opacity: makeItYoursVisible || isHistorical ? 1 : 0,
+                pointerEvents: makeItYoursVisible || isHistorical ? "auto" : "none",
               }}
             >
               Make it yours ↓
             </button>
-          )}
-        </div>
+          </div>
+        )}
         {loading && <SummarySkeleton />}
         {error && (
-          <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
             {error}
           </p>
         )}
-        {!loading && !error && brief?.summary && (
-          <div className="min-w-0 space-y-4">
+          {!loading && !error && brief?.summary && (
+            <div className="min-w-0 space-y-4">
             {brief.title && (
               <h3
-                className="font-heading text-2xl font-bold leading-tight text-white sm:text-3xl"
+                className="font-heading text-2xl font-bold leading-tight text-[#1a1a1a] dark:text-white sm:text-3xl"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
                 {brief.title}
               </h3>
             )}
-            {restoredFromCache ? (
-              <div className="text-base leading-relaxed text-zinc-300 sm:text-lg sm:leading-relaxed">
+            {(restoredFromCache || isHistorical) ? (
+              <div className="text-base leading-relaxed text-[#1a1a1a] dark:text-zinc-300 sm:text-lg sm:leading-relaxed">
                 {brief.paragraphs.length > 0 ? (
                   brief.paragraphs.map((p, i) => (
                     <p key={i} className="mb-4 last:mb-0">
@@ -383,7 +241,7 @@ export function NoisebriefContent() {
                 )}
               </div>
             ) : brief.paragraphs.length > 0 ? (
-              <div className="text-base leading-relaxed text-zinc-300 sm:text-lg sm:leading-relaxed">
+              <div className="text-base leading-relaxed text-[#1a1a1a] dark:text-zinc-300 sm:text-lg sm:leading-relaxed">
                 <TypewriterParagraphs
                   paragraphs={brief.paragraphs}
                   onComplete={handleSummaryComplete}
@@ -392,7 +250,7 @@ export function NoisebriefContent() {
                 />
               </div>
             ) : (
-              <div className="text-base leading-relaxed text-zinc-300 sm:text-lg sm:leading-relaxed">
+              <div className="text-base leading-relaxed text-[#1a1a1a] dark:text-zinc-300 sm:text-lg sm:leading-relaxed">
                 <TypewriterSummary
                   text={brief.summary}
                   onComplete={handleSummaryComplete}
@@ -404,7 +262,7 @@ export function NoisebriefContent() {
           </div>
         )}
         {!loading && !error && brief && !brief.summary && brief.sources.length === 0 && (
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-[#6b6b6b] dark:text-zinc-500">
             No brief yet. Check back after the daily run.
           </p>
         )}
@@ -412,10 +270,10 @@ export function NoisebriefContent() {
 
       {brief && brief.sources.length > 0 && (
         <section
-          className={`mb-6 min-w-0 section-reveal ${summaryComplete ? "section-reveal-visible" : ""}`}
+          className={`mb-6 min-w-0 section-reveal ${(summaryComplete || isHistorical) ? "section-reveal-visible" : ""}`}
         >
           <h2
-            className="mb-3 font-heading text-base font-semibold text-zinc-400 sm:text-lg"
+            className="mb-3 font-heading text-base font-semibold text-[#6b6b6b] dark:text-zinc-400 sm:text-lg"
             style={{ fontFamily: "var(--font-heading)" }}
           >
             Where we looked
@@ -424,22 +282,23 @@ export function NoisebriefContent() {
             sources={brief.sources}
             briefDate={brief.date}
             summaryComplete={summaryComplete}
+            isHistorical={isHistorical}
           />
         </section>
       )}
 
       {brief?.summary && (
         <section
-          className={`mb-6 min-w-0 section-reveal ${sourcesRevealed ? "section-reveal-visible" : ""}`}
+          className={`mb-6 min-w-0 section-reveal ${(sourcesRevealed || isHistorical) ? "section-reveal-visible" : ""}`}
         >
           <h2
             id="make-it-yours"
-            className="mb-0 font-heading text-base font-semibold text-zinc-400 sm:text-lg"
+            className="mb-0 font-heading text-base font-semibold text-[#6b6b6b] dark:text-zinc-400 sm:text-lg"
             style={{ fontFamily: "var(--font-heading)" }}
           >
             Make it yours
           </h2>
-          <p className="mb-3 text-sm text-zinc-500">
+          <p className="mb-3 text-sm text-[#6b6b6b] dark:text-zinc-500">
             Choose your tone, get today's brief ready to share. Posts are AI-generated from the same summary. Edit before you post.
           </p>
           <ToneSelector
@@ -448,7 +307,7 @@ export function NoisebriefContent() {
             loading={generatingTone !== null}
           />
           {generateError && (
-            <p className="mt-2 text-sm text-red-400">{generateError}</p>
+            <p className="mt-2 text-sm text-red-500 dark:text-red-400">{generateError}</p>
           )}
           <div className="mt-4">
             {selectedTone &&
@@ -463,7 +322,7 @@ export function NoisebriefContent() {
 
         </div>
       </main>
-      <footer className="border-t border-white/5 px-4 py-6 text-center text-xs text-zinc-600 sm:text-sm">
+      <footer className="border-t border-zinc-200 px-4 py-6 text-center text-xs text-[#6b6b6b] dark:border-white/5 dark:text-zinc-600 sm:text-sm">
         <p className="flex min-w-0 flex-wrap items-center justify-center gap-x-1 gap-y-1 break-words">
           Built by{" "}
           <a
@@ -475,9 +334,10 @@ export function NoisebriefContent() {
             Barış Ermut
           </a>
           <span className="shrink-0">·</span>
+          <ThemeToggle />
           <Link
             href="/privacy"
-            className="cursor-pointer text-zinc-500 transition-colors hover:text-white min-h-[44px] min-w-0 inline-flex items-center justify-center"
+            className="cursor-pointer text-[#6b6b6b] transition-colors hover:text-foreground dark:text-zinc-500 dark:hover:text-white min-h-[44px] min-w-0 inline-flex items-center justify-center"
           >
             Privacy Policy
           </Link>

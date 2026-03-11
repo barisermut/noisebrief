@@ -90,16 +90,8 @@ export async function GET() {
       console.error("Brief today error");
     }
     return NextResponse.json(
-      {
-        title: null,
-        summary: null,
-        paragraphs: [],
-        sources: [],
-        generatedAt: null,
-        date: null,
-        isFallback: false,
-      },
-      { status: 200 }
+      { error: "Failed to load brief" },
+      { status: 500 }
     );
   }
 }

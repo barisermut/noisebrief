@@ -33,15 +33,18 @@ export async function GET(request: Request) {
   }
 
   try {
-    let sources: Awaited<ReturnType<typeof fetchAllSources>>;
-    try {
-      sources = await fetchAllSources();
-    } catch {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Cron error after RSS fetch");
-      }
-      throw new Error("RSS fetch failed");
-    }
+    // Fetch sources and yesterday's URLs in parallel — they're independent.
+    const [sourcesResult, yesterdayUrlsResult] = await Promise.all([
+      fetchAllSources().catch((err) => {
+        if (process.env.NODE_ENV === "development") {
+          console.error("Cron error after RSS fetch");
+        }
+        throw err;
+      }),
+      getYesterdayBriefUrls().catch(() => new Set<string>()),
+    ]);
+
+    const sources = sourcesResult;
 
     if (sources.length === 0) {
       return NextResponse.json(
@@ -50,13 +53,7 @@ export async function GET(request: Request) {
       );
     }
 
-    // Exclude articles that appeared in yesterday's brief to avoid repeated headlines.
-    let yesterdayUrls: Set<string>;
-    try {
-      yesterdayUrls = await getYesterdayBriefUrls();
-    } catch {
-      yesterdayUrls = new Set();
-    }
+    const yesterdayUrls = yesterdayUrlsResult;
     let sourcesToUse = sources.filter(
       (s: Source) => !yesterdayUrls.has(s.url)
     );

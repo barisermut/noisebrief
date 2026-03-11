@@ -32,14 +32,14 @@ export function GeneratedPost({ post }: GeneratedPostProps) {
 
   return (
     <div
-      className="post-card-enter min-w-0 rounded-xl border border-white/10 border-l-4 border-l-teal-400 bg-[#13131a] p-3 sm:p-4"
+      className="post-card-enter min-w-0 rounded-xl border border-zinc-200 border-l-4 border-l-teal-400 bg-white p-3 dark:border-white/10 dark:bg-[#13131a] sm:p-4"
       style={{ willChange: "transform", transition: "opacity 0.2s ease-out, transform 0.2s ease-out" }}
     >
       <div className="mb-3 flex min-w-0 items-center gap-2">
         <FileText className="h-4 w-4 shrink-0 text-teal-400" />
-        <span className="min-w-0 truncate text-xs text-zinc-500">Your recap — ready to copy & share anywhere</span>
+        <span className="min-w-0 truncate text-xs text-[#6b6b6b] dark:text-zinc-500">Your recap — ready to copy & share anywhere</span>
       </div>
-      <div className="mb-4 min-w-0 overflow-hidden whitespace-pre-wrap break-words rounded-lg border border-white/5 bg-black/20 p-3 text-sm leading-relaxed text-zinc-300 sm:p-4">
+      <div className="mb-4 min-w-0 overflow-hidden whitespace-pre-wrap break-words rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm leading-relaxed text-[#1a1a1a] dark:border-white/5 dark:bg-black/20 dark:text-zinc-300 sm:p-4">
         {post}
       </div>
       <button
@@ -50,7 +50,7 @@ export function GeneratedPost({ post }: GeneratedPostProps) {
         {!copied && <Copy className="h-4 w-4 shrink-0" />}
         {copied ? "Copied ✓" : "Copy & Share"}
       </button>
-      {copyError && <p className="mt-2 text-xs text-red-400">{copyError}</p>}
+      {copyError && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{copyError}</p>}
     </div>
   );
 }

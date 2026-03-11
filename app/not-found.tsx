@@ -2,14 +2,14 @@ import Link from "next/link";
 
 export default function NotFoundPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-[#0a0a0f] px-6 text-center">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center">
       <h1
-        className="text-4xl font-bold text-white"
+        className="text-4xl font-bold text-foreground"
         style={{ fontFamily: "var(--font-heading)" }}
       >
         404
       </h1>
-      <p className="mt-3 max-w-md text-sm text-zinc-400">
+      <p className="mt-3 max-w-md text-sm text-muted-foreground">
         This page doesn&apos;t exist. Maybe the brief hasn&apos;t dropped yet.
       </p>
       <Link

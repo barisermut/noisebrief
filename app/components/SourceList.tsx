@@ -47,11 +47,11 @@ const SourceItemRow = memo(function SourceItemRow({
         target="_blank"
         rel="noopener noreferrer"
         title={source.title}
-        className={`min-w-0 flex-1 truncate overflow-hidden text-sm text-zinc-300 underline decoration-primary/50 underline-offset-2 hover:text-primary cursor-pointer ${truncateTitle ? "max-w-0 sm:max-w-none" : ""}`}
+        className={`min-w-0 flex-1 truncate overflow-hidden text-sm text-[#1a1a1a] underline decoration-primary/50 underline-offset-2 hover:text-primary cursor-pointer dark:text-zinc-300 ${truncateTitle ? "max-w-0 sm:max-w-none" : ""}`}
       >
         {source.title}
       </a>
-      <span className="ml-2 flex shrink-0 text-right text-xs text-zinc-500 whitespace-nowrap max-[375px]:hidden">
+      <span className="ml-2 flex shrink-0 text-right text-xs text-[#6b6b6b] whitespace-nowrap dark:text-zinc-500 max-[375px]:hidden">
         {source.sourceName} · {timeAgo(source.publishedAt)}
       </span>
     </>
@@ -72,7 +72,7 @@ function SourceItem({
   staggerDelayMs?: number;
 }) {
   const className =
-    "flex min-w-0 items-center gap-2 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 transition-colors hover:bg-white/[0.04] sm:gap-3";
+    "flex min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 transition-colors hover:bg-zinc-50 dark:border-white/5 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] sm:gap-3";
   if (animate) {
     return (
       <motion.li
@@ -102,9 +102,11 @@ interface SourceListProps {
   sources: Source[];
   briefDate: string | null;
   summaryComplete?: boolean;
+  /** When true, source items render visible immediately (no stagger animation). */
+  isHistorical?: boolean;
 }
 
-export function SourceList({ sources, briefDate, summaryComplete = false }: SourceListProps) {
+export function SourceList({ sources, briefDate, summaryComplete = false, isHistorical = false }: SourceListProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -159,7 +161,7 @@ export function SourceList({ sources, briefDate, summaryComplete = false }: Sour
             key={`${s.url}-${s.publishedAt}-${i}`}
             source={s}
             index={i}
-            animate
+            animate={!isHistorical}
             summaryComplete={summaryComplete}
             staggerDelayMs={80}
           />
@@ -177,29 +179,29 @@ export function SourceList({ sources, briefDate, summaryComplete = false }: Sour
           </DialogTrigger>
           <DialogContent
             onOpenAutoFocus={(e) => e.preventDefault()}
-            className="sources-modal-content fixed inset-x-0 bottom-0 top-auto z-50 mx-0 flex w-full max-w-none flex-col translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-t-xl border-t border-zinc-800 bg-[#13131a] p-4 text-zinc-200 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:mx-4 sm:max-w-2xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:border sm:p-6"
+            className="sources-modal-content max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:z-50 max-sm:mx-0 max-sm:flex max-sm:w-full max-sm:max-w-none max-sm:flex-col max-sm:translate-x-0 max-sm:translate-y-0 max-sm:gap-0 max-sm:overflow-hidden max-sm:rounded-t-xl max-sm:border-t max-sm:border-zinc-200 max-sm:bg-white max-sm:p-4 max-sm:text-[#1a1a1a] dark:max-sm:border-zinc-800 dark:max-sm:bg-[#13131a] dark:max-sm:text-zinc-200 sm:mx-4 sm:max-w-2xl sm:max-h-[90vh] sm:flex sm:flex-col sm:gap-0 sm:overflow-y-auto sm:overflow-hidden sm:rounded-lg sm:border sm:border-zinc-200 sm:p-6 sm:bg-white sm:text-[#1a1a1a] dark:sm:border-zinc-800 dark:sm:bg-[#13131a] dark:sm:text-zinc-200"
           >
             <DialogHeader className="shrink-0">
-              <DialogTitle className="pr-8 text-lg font-semibold text-white sm:pr-0">
-                All sources for {modalDate}
+              <DialogTitle className="pr-8 text-lg font-semibold text-[#1a1a1a] sm:pr-0 dark:text-white">
+                {modalDate}
               </DialogTitle>
             </DialogHeader>
             <div className="mt-4 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               <div className="relative min-w-0 shrink-0">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 shrink-0 -translate-y-1/2 text-zinc-500" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 shrink-0 -translate-y-1/2 text-[#6b6b6b] dark:text-zinc-500" />
                 <input
                   type="text"
                   placeholder="Search sources..."
                   value={search}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   autoFocus={false}
-                  className="w-full min-w-0 rounded-lg border border-white/10 bg-white/5 py-2.5 pl-9 pr-10 text-sm text-zinc-200 placeholder:text-zinc-500 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  className="w-full min-w-0 rounded-lg border border-zinc-200 bg-zinc-50 py-2.5 pl-9 pr-10 text-sm text-[#1a1a1a] placeholder:text-[#6b6b6b] focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/50 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:placeholder:text-zinc-500"
                 />
                 {search && (
                   <button
                     type="button"
                     onClick={() => handleSearchChange("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded p-1 text-zinc-500 hover:text-zinc-300"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded p-1 text-[#6b6b6b] hover:text-[#1a1a1a] dark:text-zinc-500 dark:hover:text-zinc-300"
                     aria-label="Clear search"
                   >
                     <X className="h-4 w-4" />
@@ -213,23 +215,23 @@ export function SourceList({ sources, briefDate, summaryComplete = false }: Sour
                 {paginated.map((s, i) => (
                   <li
                     key={`${s.url}-${s.publishedAt}-${i}`}
-                    className="flex min-w-0 items-center gap-2 overflow-hidden rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 transition-colors hover:bg-white/[0.04] sm:gap-3"
+                    className="flex min-w-0 items-center gap-2 overflow-hidden rounded-lg border border-zinc-200 bg-white px-3 py-2 transition-colors hover:bg-zinc-50 dark:border-white/5 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] sm:gap-3"
                   >
                     <SourceItemRow source={s} truncateTitle />
                   </li>
                 ))}
               </ul>
               <div
-                className="flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-2 border-t border-white/5"
+                className="flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-2 border-t border-zinc-200 dark:border-white/5"
                 style={{
                   position: "sticky",
                   bottom: 0,
-                  backgroundColor: "#13131a",
+                  backgroundColor: "var(--card)",
                   paddingBottom: "max(env(safe-area-inset-bottom), 12px)",
                   paddingTop: "12px",
                 }}
               >
-                <span className="shrink-0 text-xs text-zinc-500">
+                <span className="shrink-0 text-xs text-[#6b6b6b] dark:text-zinc-500">
                   Page {currentPage} of {totalPages}
                 </span>
                 <div className="flex shrink-0 gap-2">
@@ -237,7 +239,7 @@ export function SourceList({ sources, briefDate, summaryComplete = false }: Sour
                     type="button"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage <= 1}
-                    className="inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none"
+                    className="inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-1 rounded border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm text-[#1a1a1a] hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10"
                   >
                     <ChevronLeft className="h-4 w-4" />
                     Previous
@@ -246,7 +248,7 @@ export function SourceList({ sources, briefDate, summaryComplete = false }: Sour
                     type="button"
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage >= totalPages}
-                    className="inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none"
+                    className="inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-1 rounded border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm text-[#1a1a1a] hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10"
                   >
                     Next
                     <ChevronRight className="h-4 w-4" />

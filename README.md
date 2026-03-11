@@ -16,13 +16,16 @@ Live at: https://noisebrief.vercel.app
 
 ## What it does
 
-- Pulls daily tech news and drama from Hacker News, TechCrunch, The Verge,
+- Pulls daily tech news from Hacker News, TechCrunch, The Verge,
   Wired, and Reddit (via RSS) — once per day via cron job
+- Deduplicates against yesterday's brief so you never see the same headlines twice
 - Uses Claude AI to summarize everything into a punchy title +
   2-3 sharp paragraphs
 - Lets users generate a ready-to-share recap in 6 tones:
   Quirky, Formal, Cheesy, Savage, Inspirational, TL;DR
+- Browse past briefs through a calendar date picker
 - Copy to clipboard and share anywhere
+- Light and dark theme with system preference detection
 
 ## Stack
 
@@ -31,6 +34,7 @@ Live at: https://noisebrief.vercel.app
 | Framework | Next.js 16 (App Router) + TypeScript |
 | Styling | Tailwind CSS v4 + shadcn/ui |
 | Animations | Framer Motion |
+| Calendar | React DayPicker |
 | Database | Supabase (Postgres) |
 | AI | Anthropic Claude API (Sonnet for summaries, Haiku for recaps) |
 | RSS Parsing | rss-parser |
@@ -48,12 +52,15 @@ Live at: https://noisebrief.vercel.app
 
 ## Environment Variables
 
+See `.env.example` for descriptions. Copy it to `.env.local` and fill in your values.
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 ANTHROPIC_API_KEY=
 CRON_SECRET=
+NEXT_PUBLIC_SITE_URL=
 ```
 
 ## Running Locally
@@ -64,6 +71,7 @@ npm run dev
 ```
 
 Trigger the daily cron manually:
+
 ```bash
 curl -X GET http://localhost:3000/api/cron/daily \
   -H "authorization: Bearer YOUR_CRON_SECRET"
@@ -71,13 +79,23 @@ curl -X GET http://localhost:3000/api/cron/daily \
 
 ### Scripts
 
-- **Favicons** — Regenerate PNG favicons from the source SVG (e.g. after changing `public/favicon.svg`):
+- **Favicons** — Regenerate PNG favicons from the source SVG:
   ```bash
   node scripts/generate-favicons.js
   ```
-  Produces `public/favicon-32x32.png` and `public/apple-touch-icon.png` (requires `sharp` in devDependencies).
+
+- **Favicon ICO** — Generate `favicon.ico` from the PNG:
+  ```bash
+  node scripts/generate-favicon-ico.cjs
+  ```
+
+- **OG Image** — Generate the Open Graph image:
+  ```bash
+  node scripts/generate-og-image.cjs
+  ```
+
+All scripts require `sharp` (in devDependencies).
 
 ## About
 
-Just another side project by an eager PM learning to build with Cursor.
 Built by [Barış Ermut](https://barisermut.com).
