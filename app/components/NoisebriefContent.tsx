@@ -323,25 +323,30 @@ export function NoisebriefContent() {
         </div>
       </main>
       <footer className="border-t border-zinc-200 px-4 py-6 text-center text-xs text-[#6b6b6b] dark:border-white/5 dark:text-zinc-600 sm:text-sm">
-        <p className="flex min-w-0 flex-wrap items-center justify-center gap-x-1 gap-y-1 break-words">
-          Built by{" "}
-          <a
-            href="https://barisermut.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="cursor-pointer text-primary hover:underline min-h-[44px] min-w-0 inline-flex items-center justify-center"
-          >
-            Barış Ermut
-          </a>
-          <span className="shrink-0">·</span>
-          <ThemeToggle />
+        <div className="flex items-center justify-center gap-3">
+          <span>
+            Built by{" "}
+            <a
+              href="https://barisermut.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cursor-pointer text-primary hover:underline"
+            >
+              Barış Ermut
+            </a>
+          </span>
+          <span className="select-none text-[#1a1a1a]/20 dark:text-white/20" aria-hidden>|</span>
+          <div className="flex items-center [&_button]:min-w-0 [&_button]:min-h-0 [&_button]:p-0 [&_button]:leading-none [&_svg]:h-[1em] [&_svg]:w-[1em]">
+            <ThemeToggle />
+          </div>
+          <span className="select-none text-[#1a1a1a]/20 dark:text-white/20" aria-hidden>|</span>
           <Link
             href="/privacy"
-            className="cursor-pointer text-[#6b6b6b] transition-colors hover:text-foreground dark:text-zinc-500 dark:hover:text-white min-h-[44px] min-w-0 inline-flex items-center justify-center"
+            className="cursor-pointer text-[#6b6b6b] transition-colors hover:text-foreground dark:text-zinc-500 dark:hover:text-white"
           >
             Privacy Policy
           </Link>
-        </p>
+        </div>
       </footer>
     </div>
   );

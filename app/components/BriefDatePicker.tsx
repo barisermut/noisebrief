@@ -278,7 +278,7 @@ export function BriefDatePicker({
   );
 
   return (
-    <div className="relative flex shrink-0 items-center gap-2">
+    <div className="relative flex min-w-0 items-center gap-1 sm:gap-2">
       <span className="select-none text-[#1a1a1a]/20 dark:text-white/20" aria-hidden>
         |
       </span>
