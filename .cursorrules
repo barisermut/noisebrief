@@ -138,7 +138,7 @@ vercel.json           → Cron schedule config
 
 ## Data & API Rules
 - RSS parsing: use `rss-parser` npm package for all RSS feeds
-- Reddit: RSS only — never the API. Subreddits: r/technology, r/artificial, r/singularity, r/tech, r/artificialintelligence, r/ProductManagement
+- Reddit: RSS only — never the API. Subreddits: r/technology, r/artificial, r/singularity, r/tech, r/MachineLearning, r/ProductManagement
 - Source favicons: `https://www.google.com/s2/favicons?domain={domain}&sz=32`
 - All external calls wrapped in try/catch with timeout handling
 - Cron endpoint must validate `CRON_SECRET` header before executing

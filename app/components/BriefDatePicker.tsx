@@ -62,6 +62,8 @@ interface BriefDatePickerProps {
   selectedDate: string;
   isHistorical: boolean;
   onSelectDate: (date: string) => void;
+  dates: string[];
+  loadingDates: boolean;
 }
 
 function CalendarPanel({
@@ -184,7 +186,8 @@ function MobileBottomSheet({
         ref={sheetRef}
         role="dialog"
         aria-label="Choose a date for past brief"
-        className="absolute inset-x-0 bottom-0 z-50 rounded-t-xl border-t border-zinc-200 bg-white p-4 pb-[env(safe-area-inset-bottom)] dark:border-white/8 dark:bg-[#0f0f17]"
+        className="absolute inset-x-0 bottom-0 z-50 rounded-t-xl border-t border-zinc-200 bg-white p-4 dark:border-white/8 dark:bg-[#0f0f17]"
+        style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}
       >
         <button
           type="button"
@@ -206,36 +209,13 @@ export function BriefDatePicker({
   selectedDate,
   isHistorical,
   onSelectDate,
+  dates,
+  loadingDates,
 }: BriefDatePickerProps) {
   const [open, setOpen] = useState(false);
-  const [dates, setDates] = useState<string[]>([]);
-  const [loadingDates, setLoadingDates] = useState(true);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const isMobile = useIsMobile();
-
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        const res = await fetch("/api/briefs/available-dates", {
-          signal: AbortSignal.timeout(10_000),
-        });
-        const data = await res.json();
-        if (!cancelled && res.ok && Array.isArray(data.dates)) {
-          setDates(data.dates);
-        }
-      } catch {
-        if (!cancelled) setDates([]);
-      } finally {
-        if (!cancelled) setLoadingDates(false);
-      }
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     if (!open || isMobile) return;
@@ -261,7 +241,6 @@ export function BriefDatePicker({
   );
 
   const today = getTodayDateString();
-  const todayAvailable = dates.includes(today);
   const goToToday = useCallback(() => {
     onSelectDate(today);
     setOpen(false);
@@ -294,7 +273,7 @@ export function BriefDatePicker({
         <Calendar className="h-3.5 w-3.5 shrink-0" aria-hidden />
         <span>past briefs</span>
       </button>
-      {isHistorical && todayAvailable && (
+      {isHistorical && (
         <>
           <span className="select-none text-[#1a1a1a]/20 dark:text-white/20" aria-hidden>
             |

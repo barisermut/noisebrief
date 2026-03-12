@@ -2,13 +2,38 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import type { Source } from "@/types";
 
+interface BriefRow {
+  date: string;
+  title: string | null;
+  summary: string;
+  paragraphs: unknown;
+  sources: unknown;
+  created_at: string;
+}
+
+function formatBriefResponse(row: BriefRow, isFallback: boolean) {
+  const paras = Array.isArray(row.paragraphs)
+    ? (row.paragraphs as string[])
+    : row.summary
+      ? [row.summary]
+      : [];
+  return {
+    title: row.title ?? "",
+    summary: row.summary,
+    paragraphs: paras,
+    sources: (row.sources as Source[]) ?? [],
+    generatedAt: row.created_at,
+    date: row.date,
+    isFallback,
+  };
+}
+
 export async function GET() {
   const today = new Date().toISOString().slice(0, 10);
 
   try {
     const admin = getSupabaseAdmin();
 
-    // Fetch today and latest in parallel; then prefer today if present.
     const [todayResult, latestResult] = await Promise.all([
       admin
         .from("daily_briefs")
@@ -27,53 +52,11 @@ export async function GET() {
     const { data: latestData, error: latestError } = latestResult;
 
     if (!todayError && todayData) {
-      const row = todayData as {
-        date: string;
-        title: string | null;
-        summary: string;
-        paragraphs: unknown;
-        sources: unknown;
-        created_at: string;
-      };
-      const paras = Array.isArray(row.paragraphs)
-        ? (row.paragraphs as string[])
-        : row.summary
-          ? [row.summary]
-          : [];
-      return NextResponse.json({
-        title: row.title ?? "",
-        summary: row.summary,
-        paragraphs: paras,
-        sources: (row.sources as Source[]) ?? [],
-        generatedAt: row.created_at,
-        date: row.date,
-        isFallback: false,
-      });
+      return NextResponse.json(formatBriefResponse(todayData as BriefRow, false));
     }
 
     if (!latestError && latestData) {
-      const row = latestData as {
-        date: string;
-        title: string | null;
-        summary: string;
-        paragraphs: unknown;
-        sources: unknown;
-        created_at: string;
-      };
-      const paras = Array.isArray(row.paragraphs)
-        ? (row.paragraphs as string[])
-        : row.summary
-          ? [row.summary]
-          : [];
-      return NextResponse.json({
-        title: row.title ?? "",
-        summary: row.summary,
-        paragraphs: paras,
-        sources: (row.sources as Source[]) ?? [],
-        generatedAt: row.created_at,
-        date: row.date,
-        isFallback: true,
-      });
+      return NextResponse.json(formatBriefResponse(latestData as BriefRow, true));
     }
 
     return NextResponse.json({

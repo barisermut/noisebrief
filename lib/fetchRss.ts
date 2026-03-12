@@ -41,6 +41,32 @@ function decodeHtmlEntities(text: string): string {
     .replace(/&#039;/g, "'");
 }
 
+const DEFAULT_HEADERS = { "User-Agent": "Noisebrief/1.0" } as const;
+const FETCH_TIMEOUT = 10_000;
+const MS_48_HOURS = 48 * 60 * 60 * 1000;
+
+async function fetchXml(url: string, sourceName: string): Promise<string | null> {
+  const headers = isRedditUrl(url) ? REDDIT_HEADERS : DEFAULT_HEADERS;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+  try {
+    const response = await fetch(url, {
+      headers,
+      next: { revalidate: 0 },
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      if (process.env.NODE_ENV === "development") {
+        console.error(`[${sourceName}] failed: HTTP ${response.status}`);
+      }
+      return null;
+    }
+    return await response.text();
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 export async function fetchRssFeed(
   url: string,
   sourceName: string,
@@ -50,53 +76,13 @@ export async function fetchRssFeed(
     console.log(`Fetching ${sourceName}...`);
   }
   try {
-    let items: RssItem[];
-    if (isRedditUrl(url)) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      let response: Response;
-      try {
-        response = await fetch(url, {
-          headers: REDDIT_HEADERS,
-          next: { revalidate: 0 },
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timeoutId);
-      }
-      if (!response.ok) {
-        if (process.env.NODE_ENV === "development") {
-          console.error(`[${sourceName}] failed: HTTP ${response.status}`);
-        }
-        return [];
-      }
-      const xml = await response.text();
-      const feed = await parser.parseString(xml);
-      items = (feed.items ?? []) as RssItem[];
-    } else {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      let response: Response;
-      try {
-        response = await fetch(url, {
-          headers: { "User-Agent": "Noisebrief/1.0" },
-          next: { revalidate: 0 },
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timeoutId);
-      }
-      if (!response.ok) {
-        if (process.env.NODE_ENV === "development") {
-          console.error(`[${sourceName}] failed: HTTP ${response.status}`);
-        }
-        return [];
-      }
-      const xml = await response.text();
-      const feed = await parser.parseString(xml);
-      items = (feed.items ?? []) as RssItem[];
-    }
-    const MS_48_HOURS = 48 * 60 * 60 * 1000;
+    const xml = await fetchXml(url, sourceName);
+    if (!xml) return [];
+
+    const feed = await parser.parseString(xml);
+    const items = (feed.items ?? []) as RssItem[];
+
+    const reddit = isRedditUrl(url);
     const cutoff = Date.now() - MS_48_HOURS;
 
     const mapped = items
@@ -109,16 +95,14 @@ export async function fetchRssFeed(
         publishedAt: item.isoDate ?? item.pubDate ?? new Date().toISOString(),
       }));
 
-    // Reddit: 48h filter then sort by newest; limit 5 per sub. Non-Reddit: 10 per source.
-    const filtered =
-      isRedditUrl(url) ?
-        mapped.filter((item) => new Date(item.publishedAt).getTime() >= cutoff)
+    const filtered = reddit
+      ? mapped.filter((item) => new Date(item.publishedAt).getTime() >= cutoff)
       : mapped;
 
-    const limit = isRedditUrl(url) ? 5 : 10;
     const result = [...filtered]
       .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-      .slice(0, limit);
+      .slice(0, reddit ? 5 : 10);
+
     if (process.env.NODE_ENV === "development") {
       console.log(`[${sourceName}] returned ${result.length} items`);
     }

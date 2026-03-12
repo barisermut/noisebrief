@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -83,6 +84,10 @@ interface BriefContextValue {
   isHistorical: boolean;
   /** Navigate to a brief by date; use today string for home. */
   navigateToDate: (date: string) => void;
+  /** All dates that have a brief, sorted descending. */
+  availableDates: string[];
+  /** True while the available-dates request is in flight. */
+  availableDatesLoading: boolean;
 }
 
 const BriefContext = createContext<BriefContextValue | null>(null);
@@ -99,51 +104,51 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Read cache synchronously before first paint so typewriter doesn't briefly start then reset
-  const cached =
-    typeof window !== "undefined"
-      ? (() => {
-          try {
-            return JSON.parse(
-              sessionStorage.getItem(BRIEF_STORAGE_KEY) ?? "null"
-            ) as BriefData | null;
-          } catch {
-            return null;
-          }
-        })()
-      : null;
-  const isValidCache =
-    cached?.date === getTodayDateString() &&
-    cached?.summary != null;
-
   const today = getTodayDateString();
   const [latestAvailableDate, setLatestAvailableDate] = useState(today);
   const [availableDatesLoaded, setAvailableDatesLoaded] = useState(false);
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
 
-  const [brief, setBrief] = useState<BriefData | null>(
-    isValidCache ? cached : null
-  );
-  const [loading, setLoading] = useState(
-    !(isValidCache && pathname === "/")
-  );
+  const [brief, setBrief] = useState<BriefData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [summaryComplete, setSummaryComplete] = useState(!!isValidCache);
-  const [skipRequested, setSkipRequested] = useState(!!isValidCache);
-  const [sourcesRevealed, setSourcesRevealed] = useState(!!isValidCache);
-  const [restoredFromCache, setRestoredFromCache] = useState(!!isValidCache);
+  const [summaryComplete, setSummaryComplete] = useState(false);
+  const [skipRequested, setSkipRequested] = useState(false);
+  const [sourcesRevealed, setSourcesRevealed] = useState(false);
+  const [restoredFromCache, setRestoredFromCache] = useState(false);
   const skipRef = useRef(false);
-  if (isValidCache) skipRef.current = true;
   const [selectedTone, setSelectedTone] = useState<Tone | null>(null);
-  const [postCache, setPostCache] = useState<Map<Tone, string>>(
-    isValidCache ? loadPostsFromStorage() : new Map()
-  );
+  const [postCache, setPostCache] = useState<Map<Tone, string>>(new Map());
   const postCacheRef = useRef<Map<Tone, string>>(postCache);
   postCacheRef.current = postCache;
   const [generatingTone, setGeneratingTone] = useState<Tone | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
-  const [makeItYoursVisible, setMakeItYoursVisible] = useState(!!isValidCache);
+  const [makeItYoursVisible, setMakeItYoursVisible] = useState(false);
 
-  if (isValidCache && cached?.date) briefCache.set(cached.date, cached);
+  // Restore from sessionStorage before browser paint to prevent typewriter replay.
+  // useLayoutEffect runs after hydration but before the browser paints,
+  // so initial state matches the server (no hydration mismatch) and the
+  // user never sees a loading flash.
+  const syncRestoreDone = useRef(false);
+  useLayoutEffect(() => {
+    if (syncRestoreDone.current) return;
+    syncRestoreDone.current = true;
+    const stored = loadBriefFromStorage();
+    if (!stored?.date || !stored?.summary) return;
+    const urlMatch = pathname.match(/^\/brief\/(\d{4}-\d{2}-\d{2})$/);
+    const wantedDate = urlMatch ? urlMatch[1] : today;
+    if (stored.date !== wantedDate) return;
+    briefCache.set(stored.date, stored);
+    setBrief(stored);
+    setSummaryComplete(true);
+    setSkipRequested(true);
+    setRestoredFromCache(true);
+    skipRef.current = true;
+    setSourcesRevealed(true);
+    setMakeItYoursVisible(true);
+    setPostCache(loadPostsFromStorage());
+    setLoading(false);
+  }, [today, pathname]);
 
   // URL is source of truth on load; when path is "/", selected date is latest available brief (not calendar today)
   const selectedDate = useMemo(() => {
@@ -162,8 +167,9 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
           signal: AbortSignal.timeout(10_000),
         });
         const data = await res.json();
-        if (!cancelled && res.ok && Array.isArray(data.dates) && data.dates.length > 0) {
-          setLatestAvailableDate(data.dates[0]);
+        if (!cancelled && res.ok && Array.isArray(data.dates)) {
+          setAvailableDates(data.dates);
+          if (data.dates.length > 0) setLatestAvailableDate(data.dates[0]);
         }
       } catch {
         // keep latestAvailableDate as today
@@ -381,6 +387,8 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
       selectedDate,
       isHistorical,
       navigateToDate,
+      availableDates,
+      availableDatesLoading: !availableDatesLoaded,
     }),
     [
       brief,
@@ -401,6 +409,8 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
       selectedDate,
       isHistorical,
       navigateToDate,
+      availableDates,
+      availableDatesLoaded,
     ]
   );
 

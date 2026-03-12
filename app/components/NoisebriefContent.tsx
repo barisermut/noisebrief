@@ -49,6 +49,8 @@ export function NoisebriefContent() {
     selectedDate,
     isHistorical,
     navigateToDate,
+    availableDates,
+    availableDatesLoading,
   } = useBrief();
 
   const displayPost =
@@ -161,6 +163,8 @@ export function NoisebriefContent() {
                   selectedDate={selectedDate}
                   isHistorical={isHistorical}
                   onSelectDate={navigateToDate}
+                  dates={availableDates}
+                  loadingDates={availableDatesLoading}
                 />
               </>
             )}
