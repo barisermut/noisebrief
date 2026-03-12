@@ -143,7 +143,7 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [makeItYoursVisible, setMakeItYoursVisible] = useState(!!isValidCache);
 
-  if (isValidCache && cached) briefCache.set(cached.date, cached);
+  if (isValidCache && cached?.date) briefCache.set(cached.date, cached);
 
   // URL is source of truth on load; when path is "/", selected date is latest available brief (not calendar today)
   const selectedDate = useMemo(() => {
