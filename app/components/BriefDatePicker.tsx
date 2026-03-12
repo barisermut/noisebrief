@@ -184,8 +184,7 @@ function MobileBottomSheet({
         ref={sheetRef}
         role="dialog"
         aria-label="Choose a date for past brief"
-        className="absolute inset-x-0 bottom-0 z-50 rounded-t-xl border-t border-zinc-200 bg-white p-4 dark:border-white/8 dark:bg-[#0f0f17]"
-        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 1rem)" }}
+        className="absolute inset-x-0 bottom-0 z-50 rounded-t-xl border-t border-zinc-200 bg-white p-4 pb-[env(safe-area-inset-bottom)] dark:border-white/8 dark:bg-[#0f0f17]"
       >
         <button
           type="button"
@@ -262,6 +261,7 @@ export function BriefDatePicker({
   );
 
   const today = getTodayDateString();
+  const todayAvailable = dates.includes(today);
   const goToToday = useCallback(() => {
     onSelectDate(today);
     setOpen(false);
@@ -294,7 +294,7 @@ export function BriefDatePicker({
         <Calendar className="h-3.5 w-3.5 shrink-0" aria-hidden />
         <span>past briefs</span>
       </button>
-      {isHistorical && (
+      {isHistorical && todayAvailable && (
         <>
           <span className="select-none text-[#1a1a1a]/20 dark:text-white/20" aria-hidden>
             |

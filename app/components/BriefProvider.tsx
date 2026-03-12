@@ -79,7 +79,7 @@ interface BriefContextValue {
   setSourcesRevealed: (v: boolean) => void;
   /** Current date from URL: today (/) or YYYY-MM-DD (/brief/YYYY-MM-DD). */
   selectedDate: string;
-  /** True when viewing a past date (no typewriter). */
+  /** True when viewing a date that is not the latest available (no typewriter). */
   isHistorical: boolean;
   /** Navigate to a brief by date; use today string for home. */
   navigateToDate: (date: string) => void;
@@ -98,30 +98,83 @@ export function useBrief(): BriefContextValue {
 export function BriefProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [brief, setBrief] = useState<BriefData | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  // Read cache synchronously before first paint so typewriter doesn't briefly start then reset
+  const cached =
+    typeof window !== "undefined"
+      ? (() => {
+          try {
+            return JSON.parse(
+              sessionStorage.getItem(BRIEF_STORAGE_KEY) ?? "null"
+            ) as BriefData | null;
+          } catch {
+            return null;
+          }
+        })()
+      : null;
+  const isValidCache =
+    cached?.date === getTodayDateString() &&
+    cached?.summary != null;
+
+  const today = getTodayDateString();
+  const [latestAvailableDate, setLatestAvailableDate] = useState(today);
+  const [availableDatesLoaded, setAvailableDatesLoaded] = useState(false);
+
+  const [brief, setBrief] = useState<BriefData | null>(
+    isValidCache ? cached : null
+  );
+  const [loading, setLoading] = useState(
+    !(isValidCache && pathname === "/")
+  );
   const [error, setError] = useState<string | null>(null);
-  const [summaryComplete, setSummaryComplete] = useState(false);
-  const [skipRequested, setSkipRequested] = useState(false);
-  const [sourcesRevealed, setSourcesRevealed] = useState(false);
-  const [restoredFromCache, setRestoredFromCache] = useState(false);
+  const [summaryComplete, setSummaryComplete] = useState(!!isValidCache);
+  const [skipRequested, setSkipRequested] = useState(!!isValidCache);
+  const [sourcesRevealed, setSourcesRevealed] = useState(!!isValidCache);
+  const [restoredFromCache, setRestoredFromCache] = useState(!!isValidCache);
   const skipRef = useRef(false);
+  if (isValidCache) skipRef.current = true;
   const [selectedTone, setSelectedTone] = useState<Tone | null>(null);
-  const [postCache, setPostCache] = useState<Map<Tone, string>>(new Map());
+  const [postCache, setPostCache] = useState<Map<Tone, string>>(
+    isValidCache ? loadPostsFromStorage() : new Map()
+  );
   const postCacheRef = useRef<Map<Tone, string>>(postCache);
   postCacheRef.current = postCache;
   const [generatingTone, setGeneratingTone] = useState<Tone | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
-  const [makeItYoursVisible, setMakeItYoursVisible] = useState(false);
+  const [makeItYoursVisible, setMakeItYoursVisible] = useState(!!isValidCache);
 
-  const today = getTodayDateString();
-  // URL is source of truth. Phase 7 can add category (e.g. /brief/YYYY-MM-DD?category=tech) without changing this shape.
+  if (isValidCache && cached) briefCache.set(cached.date, cached);
+
+  // URL is source of truth on load; when path is "/", selected date is latest available brief (not calendar today)
   const selectedDate = useMemo(() => {
-    if (pathname === "/") return today;
     const m = pathname.match(/^\/brief\/(\d{4}-\d{2}-\d{2})$/);
-    return m ? m[1] : today;
-  }, [pathname, today]);
-  const isHistorical = selectedDate !== today;
+    if (m) return m[1];
+    return latestAvailableDate;
+  }, [pathname, latestAvailableDate]);
+  const isHistorical = selectedDate !== latestAvailableDate;
+
+  // Fetch available dates once so selectedDate defaults to most recent brief when path is "/"
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/briefs/available-dates", {
+          signal: AbortSignal.timeout(10_000),
+        });
+        const data = await res.json();
+        if (!cancelled && res.ok && Array.isArray(data.dates) && data.dates.length > 0) {
+          setLatestAvailableDate(data.dates[0]);
+        }
+      } catch {
+        // keep latestAvailableDate as today
+      } finally {
+        if (!cancelled) setAvailableDatesLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const navigateToDate = useCallback(
     (date: string) => {
@@ -189,7 +242,7 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
         };
         briefCache.set(date, nextBrief);
         applyBrief(nextBrief, false);
-        if (isToday) {
+        if (date === latestAvailableDate) {
           try {
             sessionStorage.setItem(BRIEF_STORAGE_KEY, JSON.stringify(nextBrief));
             sessionStorage.removeItem(POSTS_STORAGE_KEY);
@@ -218,27 +271,25 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
       }
     },
-    [today, applyBrief]
+    [today, latestAvailableDate, applyBrief]
   );
 
   useEffect(() => {
-    if (selectedDate === today) {
-      const cached = loadBriefFromStorage();
-      if (cached?.date === today && cached.summary) {
-        briefCache.set(today, cached);
-        setBrief(cached);
-        setSummaryComplete(true);
-        setSkipRequested(true);
-        setRestoredFromCache(true);
-        skipRef.current = true;
-        setSourcesRevealed(true);
-        setPostCache(loadPostsFromStorage());
-        setLoading(false);
-        return;
-      }
+    if (!availableDatesLoaded) return;
+    const stored = loadBriefFromStorage();
+    if (
+      stored?.date === latestAvailableDate &&
+      stored?.summary != null &&
+      stored.date === selectedDate
+    ) {
+      briefCache.set(stored.date, stored);
+      applyBrief(stored, true);
+      setPostCache(loadPostsFromStorage());
+      setLoading(false);
+      return;
     }
     fetchBriefForDate(selectedDate);
-  }, [selectedDate, today, fetchBriefForDate]);
+  }, [selectedDate, latestAvailableDate, pathname, availableDatesLoaded, fetchBriefForDate, applyBrief]);
 
   useEffect(() => {
     if (postCache.size === 0) return;

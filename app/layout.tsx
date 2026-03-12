@@ -10,6 +10,10 @@ import "./globals.css";
 
 const siteUrl = getSiteUrl();
 
+export const viewport = {
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "Noisebrief — Today's tech noise. Briefly.",

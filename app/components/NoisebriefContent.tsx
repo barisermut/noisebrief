@@ -165,7 +165,13 @@ export function NoisebriefContent() {
               </>
             )}
           </div>
-          <div className="flex items-center self-center min-w-0 shrink-0 gap-2">
+          <div
+            className={
+              (summaryComplete || restoredFromCache || isHistorical)
+                ? "hidden min-w-0 shrink-0 gap-2 md:flex md:items-center md:self-center"
+                : "flex min-w-0 shrink-0 items-center gap-2 self-center"
+            }
+          >
             {!loading && !error && brief?.summary && !summaryComplete && !restoredFromCache && !isHistorical && (
               <button
                 type="button"
@@ -184,7 +190,7 @@ export function NoisebriefContent() {
               <button
                 type="button"
                 onClick={() => document.getElementById("make-it-yours")?.scrollIntoView({ behavior: "smooth" })}
-                className="hidden min-h-[44px] min-w-[44px] shrink-0 cursor-pointer rounded text-sm text-[#6b6b6b] transition-colors hover:text-[#00d4aa] dark:text-zinc-500 sm:min-w-0 sm:px-2 md:inline-block"
+                className="min-h-[44px] min-w-[44px] shrink-0 cursor-pointer rounded text-sm text-[#6b6b6b] transition-colors hover:text-[#00d4aa] dark:text-zinc-500 sm:min-w-0 sm:px-2"
                 style={{
                   transition: "opacity 0.3s ease",
                   opacity: makeItYoursVisible || isHistorical ? 1 : 0,
@@ -197,7 +203,7 @@ export function NoisebriefContent() {
           </div>
         </div>
         {!loading && !error && brief?.summary && (summaryComplete || restoredFromCache || isHistorical) && (
-          <div className="mb-3 flex md:hidden">
+          <div className="mb-3 block md:hidden">
             <button
               type="button"
               onClick={() => document.getElementById("make-it-yours")?.scrollIntoView({ behavior: "smooth" })}

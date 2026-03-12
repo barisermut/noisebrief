@@ -217,7 +217,7 @@ export function SourceList({ sources, briefDate, summaryComplete = false, isHist
                     key={`${s.url}-${s.publishedAt}-${i}`}
                     className="flex min-w-0 items-center gap-2 overflow-hidden rounded-lg border border-zinc-200 bg-white px-3 py-2 transition-colors hover:bg-zinc-50 dark:border-white/5 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] sm:gap-3"
                   >
-                    <SourceItemRow source={s} truncateTitle />
+                    <SourceItemRow source={s} truncateTitle={false} />
                   </li>
                 ))}
               </ul>
