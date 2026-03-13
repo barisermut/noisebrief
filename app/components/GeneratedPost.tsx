@@ -35,9 +35,11 @@ export function GeneratedPost({ post }: GeneratedPostProps) {
       className="post-card-enter min-w-0 rounded-xl border border-zinc-200 border-l-4 border-l-teal-400 bg-white p-3 dark:border-white/10 dark:bg-[#13131a] sm:p-4"
       style={{ willChange: "transform", transition: "opacity 0.2s ease-out, transform 0.2s ease-out" }}
     >
-      <div className="mb-3 flex min-w-0 items-center gap-2">
+      <div className="mb-3 flex items-center gap-2">
         <FileText className="h-4 w-4 shrink-0 text-teal-400" />
-        <span className="min-w-0 truncate text-xs text-[#6b6b6b] dark:text-zinc-500">Your recap — ready to copy & share anywhere</span>
+        <span className="text-xs text-[#6b6b6b] dark:text-zinc-500">
+          Your recap — ready to copy &amp; share anywhere
+        </span>
       </div>
       <div className="mb-4 min-w-0 overflow-hidden whitespace-pre-wrap break-words rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm leading-relaxed text-[#1a1a1a] dark:border-white/5 dark:bg-black/20 dark:text-zinc-300 sm:p-4">
         {post}
@@ -45,7 +47,7 @@ export function GeneratedPost({ post }: GeneratedPostProps) {
       <button
         type="button"
         onClick={handleCopy}
-        className="flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary/20 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/30 sm:w-auto sm:inline-flex"
+        className="inline-flex min-h-[44px] w-auto cursor-pointer items-center justify-center gap-2 rounded-lg bg-teal-500 dark:bg-teal-500 px-4 py-2 text-sm font-medium text-white dark:text-[#0a0a0f] transition-colors hover:opacity-90"
       >
         {!copied && <Copy className="h-4 w-4 shrink-0" />}
         {copied ? "Copied ✓" : "Copy & Share"}

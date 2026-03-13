@@ -47,11 +47,11 @@ const SourceItemRow = memo(function SourceItemRow({
         target="_blank"
         rel="noopener noreferrer"
         title={source.title}
-        className={`min-w-0 flex-1 truncate overflow-hidden text-sm text-[#1a1a1a] underline decoration-primary/50 underline-offset-2 hover:text-primary cursor-pointer dark:text-zinc-300 ${truncateTitle ? "max-w-0 sm:max-w-none" : ""}`}
+        className={`min-w-0 flex-1 truncate overflow-hidden text-sm text-foreground underline decoration-primary/50 underline-offset-2 hover:text-primary cursor-pointer dark:text-zinc-300 ${truncateTitle ? "max-w-0 sm:max-w-none" : ""}`}
       >
         {source.title}
       </a>
-      <span className="ml-2 flex shrink-0 text-right text-xs text-[#6b6b6b] whitespace-nowrap dark:text-zinc-500 max-[375px]:hidden">
+      <span className="ml-2 flex shrink-0 text-right text-xs text-foreground/60 whitespace-nowrap dark:text-zinc-500 max-[375px]:hidden">
         {source.sourceName} · {timeAgo(source.publishedAt)}
       </span>
     </>
@@ -72,7 +72,7 @@ function SourceItem({
   staggerDelayMs?: number;
 }) {
   const className =
-    "flex min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 transition-colors hover:bg-zinc-50 dark:border-white/5 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] sm:gap-3";
+    "flex min-w-0 items-center gap-2 rounded-lg border border-black/8 dark:border-white/8 bg-black/3 dark:bg-white/4 px-3 py-2 transition-colors hover:bg-black/5 dark:hover:bg-white/5 sm:gap-3";
   if (animate) {
     return (
       <motion.li
@@ -195,7 +195,7 @@ export function SourceList({ sources, briefDate, summaryComplete = false, isHist
                   value={search}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   autoFocus={false}
-                  className="w-full min-w-0 rounded-lg border border-zinc-200 bg-zinc-50 py-2.5 pl-9 pr-10 text-sm text-[#1a1a1a] placeholder:text-[#6b6b6b] focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/50 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:placeholder:text-zinc-500"
+                  className="w-full min-w-0 rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 py-2.5 pl-9 pr-10 text-sm text-foreground placeholder:text-foreground/60 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/50 dark:text-zinc-200 dark:placeholder:text-zinc-500"
                 />
                 {search && (
                   <button
@@ -215,14 +215,14 @@ export function SourceList({ sources, briefDate, summaryComplete = false, isHist
                 {paginated.map((s, i) => (
                   <li
                     key={`${s.url}-${s.publishedAt}-${i}`}
-                    className="flex min-w-0 items-center gap-2 overflow-hidden rounded-lg border border-zinc-200 bg-white px-3 py-2 transition-colors hover:bg-zinc-50 dark:border-white/5 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] sm:gap-3"
+                    className="flex min-w-0 items-center gap-2 overflow-hidden rounded-lg border border-black/8 dark:border-white/8 bg-black/3 dark:bg-white/4 px-3 py-2 transition-colors hover:bg-black/5 dark:hover:bg-white/5 sm:gap-3"
                   >
                     <SourceItemRow source={s} truncateTitle={false} />
                   </li>
                 ))}
               </ul>
               <div
-                className="flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-2 border-t border-zinc-200 dark:border-white/5"
+                className="flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-2 border-t border-black/8 dark:border-white/5"
                 style={{
                   position: "sticky",
                   bottom: 0,
@@ -231,7 +231,7 @@ export function SourceList({ sources, briefDate, summaryComplete = false, isHist
                   paddingTop: "12px",
                 }}
               >
-                <span className="shrink-0 text-xs text-[#6b6b6b] dark:text-zinc-500">
+                <span className="shrink-0 text-xs text-foreground/60 dark:text-zinc-500">
                   Page {currentPage} of {totalPages}
                 </span>
                 <div className="flex shrink-0 gap-2">
@@ -239,7 +239,7 @@ export function SourceList({ sources, briefDate, summaryComplete = false, isHist
                     type="button"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage <= 1}
-                    className="inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-1 rounded border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm text-[#1a1a1a] hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10"
+                    className="inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-1 rounded border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 py-1.5 text-sm text-foreground hover:bg-black/10 dark:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none dark:text-zinc-300"
                   >
                     <ChevronLeft className="h-4 w-4" />
                     Previous
@@ -248,7 +248,7 @@ export function SourceList({ sources, briefDate, summaryComplete = false, isHist
                     type="button"
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage >= totalPages}
-                    className="inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-1 rounded border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm text-[#1a1a1a] hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10"
+                    className="inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-1 rounded border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 py-1.5 text-sm text-foreground hover:bg-black/10 dark:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none dark:text-zinc-300"
                   >
                     Next
                     <ChevronRight className="h-4 w-4" />

@@ -1,12 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import type { Tone } from "@/types";
 import { normalizeParagraphs } from "@/types/brief";
 import { TypewriterSummary } from "./TypewriterSummary";
-import { TypewriterParagraphs } from "./TypewriterParagraphs";
-import { ParagraphWithKeyword } from "./ParagraphWithKeyword";
+import { AnimatedParagraphs } from "./AnimatedParagraphs";
 import { SummarySkeleton } from "./SummarySkeleton";
 import { SourceList } from "./SourceList";
 import { ToneSelector } from "./ToneSelector";
@@ -16,16 +15,15 @@ import { BriefDatePicker } from "./BriefDatePicker";
 import { ThemeToggle } from "./ThemeToggle";
 import { useBrief } from "./BriefProvider";
 
-function formatUpdatedAt(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const now = new Date();
-  const sec = Math.floor((now.getTime() - d.getTime()) / 1000);
-  if (sec < 60) return "just now";
-  if (sec < 3600) return `${Math.floor(sec / 60)} mins ago`;
-  if (sec < 86400) return `${Math.floor(sec / 3600)} hours ago`;
-  if (sec < 604800) return `${Math.floor(sec / 86400)} days ago`;
-  return d.toLocaleDateString();
+function formatBriefDateLabel(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00");
+  return d
+    .toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+    })
+    .toUpperCase();
 }
 
 export function NoisebriefContent() {
@@ -34,20 +32,14 @@ export function NoisebriefContent() {
     loading,
     error,
     summaryComplete,
-    skipRequested,
     sourcesRevealed,
     restoredFromCache,
-    skipRef,
     selectedTone,
     postCache,
     generatingTone,
     generateError,
-    makeItYoursVisible,
     handleSummaryComplete,
     handleToneSelect,
-    setSkipRequested,
-    setSummaryComplete,
-    setSourcesRevealed,
     selectedDate,
     isHistorical,
     navigateToDate,
@@ -63,22 +55,6 @@ export function NoisebriefContent() {
     [brief?.paragraphs]
   );
 
-  const updatedAtLabel = useMemo(
-    () => (brief?.generatedAt ? formatUpdatedAt(brief.generatedAt) : ""),
-    [brief?.generatedAt]
-  );
-  const updatedDateFormatted = useMemo(
-    () =>
-      brief?.generatedAt
-        ? new Date(brief.generatedAt).toLocaleDateString("en-US", {
-            weekday: "short",
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })
-        : "",
-    [brief?.generatedAt]
-  );
   const briefDateBadge = useMemo(
     () =>
       brief?.date
@@ -90,145 +66,117 @@ export function NoisebriefContent() {
     [brief?.date]
   );
 
+  const [scrolled, setScrolled] = useState(false);
+  const [toneSectionInView, setToneSectionInView] = useState(false);
+  const toneSectionRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", handler, { passive: true });
+    return () => window.removeEventListener("scroll", handler);
+  }, []);
+
+  useEffect(() => {
+    const el = toneSectionRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => setToneSectionInView(e.isIntersecting),
+      { threshold: 0.1, rootMargin: "0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [brief?.summary]);
+
+  const briefLoaded = !loading && !error && !!brief?.summary;
+  const showFloatingCta = briefLoaded && !toneSectionInView;
+
   return (
     <div className="flex min-h-full min-w-0 flex-col">
       <main className="flex-1 min-w-0">
+        <header
+          className={`sticky top-0 z-40 w-full bg-background/95 dark:bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-black/8 dark:border-white/8 transition-shadow duration-200 ${scrolled ? "shadow-[0_2px_16px_rgba(0,0,0,0.35)]" : ""}`}
+        >
+          <div className="max-w-2xl mx-auto flex items-center justify-between gap-2 px-4 pt-3 pb-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <svg
+                  aria-hidden="true"
+                  width="32"
+                  height="32"
+                  viewBox="0 0 32 32"
+                  fill="none"
+                  className="h-8 w-8 shrink-0 sm:h-9 sm:w-9"
+                >
+                  <path
+                    d="M7 6H11.5L16 13.5V6H20.5V26H16.5L11.5 17.5V26H7V6Z"
+                    fill="#00d4aa"
+                  />
+                  <path
+                    d="M22 11 Q25 13.5 25 16 Q25 18.5 22 21"
+                    stroke="#00d4aa"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    fill="none"
+                    opacity="0.9"
+                  />
+                  <path
+                    d="M23.5 8.5 Q28 12 28 16 Q28 20 23.5 23.5"
+                    stroke="#00d4aa"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    fill="none"
+                    opacity="0.5"
+                  />
+                  <path
+                    d="M25 6 Q31 10.5 31 16 Q31 21.5 25 26"
+                    stroke="#00d4aa"
+                    strokeWidth="1"
+                    strokeLinecap="round"
+                    fill="none"
+                    opacity="0.25"
+                  />
+                </svg>
+                <h1
+                  className="font-heading text-2xl font-bold tracking-tight text-[#1a1a1a] dark:text-white sm:text-3xl md:text-4xl"
+                  style={{ fontFamily: "var(--font-heading)" }}
+                >
+                  Noisebrief
+                </h1>
+              </div>
+              <p className="mt-1 break-words text-sm text-foreground/40">
+                Today&apos;s tech noise. Briefly.
+              </p>
+            </div>
+            <div className="shrink-0">
+              <ThemeToggle />
+            </div>
+          </div>
+        </header>
+
         <div className="relative z-0 mx-auto min-w-0 max-w-2xl px-4 pb-4 pt-6 sm:px-4">
-          <header className="mb-4 min-w-0">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <svg
-            aria-hidden="true"
-            width="32"
-            height="32"
-            viewBox="0 0 32 32"
-            fill="none"
-            className="h-8 w-8 shrink-0 sm:h-9 sm:w-9"
-          >
-            <path
-              d="M7 6H11.5L16 13.5V6H20.5V26H16.5L11.5 17.5V26H7V6Z"
-              fill="#00d4aa"
-            />
-            <path
-              d="M22 11 Q25 13.5 25 16 Q25 18.5 22 21"
-              stroke="#00d4aa"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              fill="none"
-              opacity="0.9"
-            />
-            <path
-              d="M23.5 8.5 Q28 12 28 16 Q28 20 23.5 23.5"
-              stroke="#00d4aa"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              fill="none"
-              opacity="0.5"
-            />
-            <path
-              d="M25 6 Q31 10.5 31 16 Q31 21.5 25 26"
-              stroke="#00d4aa"
-              strokeWidth="1"
-              strokeLinecap="round"
-              fill="none"
-              opacity="0.25"
-            />
-          </svg>
-          <h1
-            className="font-heading text-2xl font-bold tracking-tight text-[#1a1a1a] dark:text-white sm:text-3xl md:text-4xl"
+      <section className="mb-6 min-w-0 mt-1">
+        <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2">
+          <h2
+            className="font-heading shrink-0 text-base font-semibold text-[#6b6b6b] dark:text-zinc-400 sm:text-lg"
             style={{ fontFamily: "var(--font-heading)" }}
           >
-            Noisebrief
-          </h1>
+            Latest Brief
+          </h2>
+          {!loading && !error && brief?.summary && briefDateBadge && (
+            <>
+              <span className="shrink-0 rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-xs font-medium text-[#1a1a1a]/80 ring-1 ring-teal-500/30 dark:border-white/10 dark:bg-[#1a1a2e] dark:text-white/80">
+                {briefDateBadge}
+              </span>
+              <BriefDatePicker
+                selectedDate={selectedDate}
+                isHistorical={isHistorical}
+                onSelectDate={navigateToDate}
+                dates={availableDates}
+                loadingDates={availableDatesLoading}
+              />
+            </>
+          )}
         </div>
-        <p className="mt-1 break-words text-sm text-[#6b6b6b] dark:text-zinc-500">
-          Today&apos;s tech noise. Briefly.
-        </p>
-        {!loading && !error && brief?.generatedAt && (
-          <p className="mt-1 break-words text-xs text-[#6b6b6b] dark:text-zinc-500">
-            Updated {updatedDateFormatted} · {updatedAtLabel}
-            {" · "}
-            <span className="text-[#6b6b6b] dark:text-zinc-600">A fresh brief drops every day at 8AM UTC</span>
-          </p>
-        )}
-      </header>
-
-      <section className="mb-6 min-w-0">
-        <div className="mb-3 flex min-w-0 flex-wrap items-center justify-between gap-2">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h2
-              className="font-heading shrink-0 text-base font-semibold text-[#6b6b6b] dark:text-zinc-400 sm:text-lg"
-              style={{ fontFamily: "var(--font-heading)" }}
-            >
-              Latest Brief
-            </h2>
-            {!loading && !error && brief?.summary && briefDateBadge && (
-              <>
-                <span className="shrink-0 rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-xs font-medium text-[#1a1a1a]/80 dark:border-white/10 dark:bg-[#1a1a2e] dark:text-white/80">
-                  {briefDateBadge}
-                </span>
-                <BriefDatePicker
-                  selectedDate={selectedDate}
-                  isHistorical={isHistorical}
-                  onSelectDate={navigateToDate}
-                  dates={availableDates}
-                  loadingDates={availableDatesLoading}
-                />
-              </>
-            )}
-          </div>
-          <div
-            className={
-              (summaryComplete || restoredFromCache || isHistorical)
-                ? "hidden min-w-0 shrink-0 gap-2 md:flex md:items-center md:self-center"
-                : "flex min-w-0 shrink-0 items-center gap-2 self-center"
-            }
-          >
-            {!loading && !error && brief?.summary && !summaryComplete && !restoredFromCache && !isHistorical && (
-              <button
-                type="button"
-                onClick={() => {
-                  skipRef.current = true;
-                  setSkipRequested(true);
-                  setSummaryComplete(true);
-                  setSourcesRevealed(true);
-                }}
-                className="min-h-[44px] min-w-[44px] shrink-0 cursor-pointer rounded text-sm text-[#6b6b6b] transition-colors hover:text-[#00d4aa] dark:text-zinc-500 sm:min-w-0 sm:px-2"
-              >
-                Skip animation →
-              </button>
-            )}
-            {!loading && !error && brief?.summary && (summaryComplete || restoredFromCache || isHistorical) && (
-              <button
-                type="button"
-                onClick={() => document.getElementById("make-it-yours")?.scrollIntoView({ behavior: "smooth" })}
-                className="min-h-[44px] min-w-[44px] shrink-0 cursor-pointer rounded text-sm text-[#6b6b6b] transition-colors hover:text-[#00d4aa] dark:text-zinc-500 sm:min-w-0 sm:px-2"
-                style={{
-                  transition: "opacity 0.3s ease",
-                  opacity: makeItYoursVisible || isHistorical ? 1 : 0,
-                  pointerEvents: makeItYoursVisible || isHistorical ? "auto" : "none",
-                }}
-              >
-                Make it yours ↓
-              </button>
-            )}
-          </div>
-        </div>
-        {!loading && !error && brief?.summary && (summaryComplete || restoredFromCache || isHistorical) && (
-          <div className="mb-3 block md:hidden">
-            <button
-              type="button"
-              onClick={() => document.getElementById("make-it-yours")?.scrollIntoView({ behavior: "smooth" })}
-              className="min-h-[44px] min-w-[44px] shrink-0 cursor-pointer rounded text-left text-sm text-[#6b6b6b] transition-colors hover:text-[#00d4aa] dark:text-zinc-500 sm:min-w-0 sm:px-0"
-              style={{
-                transition: "opacity 0.3s ease",
-                opacity: makeItYoursVisible || isHistorical ? 1 : 0,
-                pointerEvents: makeItYoursVisible || isHistorical ? "auto" : "none",
-              }}
-            >
-              Make it yours ↓
-            </button>
-          </div>
-        )}
         {loading && <SummarySkeleton />}
         {error && (
           <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
@@ -236,43 +184,44 @@ export function NoisebriefContent() {
           </p>
         )}
           {!loading && !error && brief?.summary && (
-            <div className="min-w-0 space-y-4">
-            {brief.title && (
-              <h3
-                className="font-heading text-2xl font-bold leading-tight text-[#1a1a1a] dark:text-white sm:text-3xl"
-                style={{ fontFamily: "var(--font-heading)" }}
-              >
-                {brief.title}
-              </h3>
-            )}
+            <div className="min-w-0">
+            <div className="mt-4 mb-3 sm:mt-6 sm:mb-4">
+              {brief.date && (
+                <p className="text-xs font-medium tracking-widest uppercase text-[#1a1a1a]/40 dark:text-white/20 mb-1">
+                  {isHistorical ? formatBriefDateLabel(brief.date) : "TODAY'S BRIEF"}
+                </p>
+              )}
+              {brief.title && (
+                <h3
+                  className="font-heading text-2xl font-bold leading-tight text-[#1a1a1a] dark:text-white sm:text-3xl"
+                  style={{ fontFamily: "var(--font-heading)" }}
+                >
+                  {brief.title}
+                </h3>
+              )}
+            </div>
             {(restoredFromCache || isHistorical) ? (
-              <div className="text-base leading-relaxed text-[#1a1a1a] dark:text-zinc-300 sm:text-lg sm:leading-relaxed">
-                {normalizedParagraphs.length > 0 ? (
-                  normalizedParagraphs.map((p, i) => (
-                    <p key={i} className="mb-4 last:mb-0">
-                      <ParagraphWithKeyword paragraph={p} />
-                    </p>
-                  ))
-                ) : (
-                  <p>{brief.summary}</p>
-                )}
-              </div>
-            ) : normalizedParagraphs.length > 0 ? (
-              <div className="text-base leading-relaxed text-[#1a1a1a] dark:text-zinc-300 sm:text-lg sm:leading-relaxed">
-                <TypewriterParagraphs
+              normalizedParagraphs.length > 0 ? (
+                <AnimatedParagraphs
                   paragraphs={normalizedParagraphs}
-                  onComplete={handleSummaryComplete}
-                  skipToEnd={skipRequested}
-                  skipRef={skipRef}
+                  animate={false}
                 />
-              </div>
+              ) : (
+                <div className="space-y-6 text-base leading-relaxed text-[#1a1a1a] dark:text-white/80 sm:text-lg sm:leading-relaxed">
+                  <p>{brief.summary}</p>
+                </div>
+              )
+            ) : normalizedParagraphs.length > 0 ? (
+              <AnimatedParagraphs
+                paragraphs={normalizedParagraphs}
+                animate={true}
+                onComplete={handleSummaryComplete}
+              />
             ) : (
-              <div className="text-base leading-relaxed text-[#1a1a1a] dark:text-zinc-300 sm:text-lg sm:leading-relaxed">
+              <div className="text-base leading-relaxed text-[#1a1a1a] dark:text-white/80 sm:text-lg sm:leading-relaxed">
                 <TypewriterSummary
                   text={brief.summary}
                   onComplete={handleSummaryComplete}
-                  skipToEnd={skipRequested}
-                  skipRef={skipRef}
                 />
               </div>
             )}
@@ -287,13 +236,10 @@ export function NoisebriefContent() {
 
       {brief && brief.sources.length > 0 && (
         <section
-          className={`mb-6 min-w-0 section-reveal ${(summaryComplete || isHistorical) ? "section-reveal-visible" : ""}`}
+          className={`mt-8 sm:mt-6 mb-6 min-w-0 section-reveal ${(summaryComplete || isHistorical) ? "section-reveal-visible" : ""}`}
         >
-          <h2
-            className="mb-3 font-heading text-base font-semibold text-[#6b6b6b] dark:text-zinc-400 sm:text-lg"
-            style={{ fontFamily: "var(--font-heading)" }}
-          >
-            Where we looked
+          <h2 className="mb-3 text-sm text-foreground/60">
+            Sources  ·  {brief.sources.length} today
           </h2>
           <SourceList
             sources={brief.sources}
@@ -306,17 +252,16 @@ export function NoisebriefContent() {
 
       {brief?.summary && (
         <section
-          className={`mb-6 min-w-0 section-reveal ${(sourcesRevealed || isHistorical) ? "section-reveal-visible" : ""}`}
+          ref={toneSectionRef}
+          id="make-it-yours"
+          className={`mt-6 mb-6 min-w-0 section-reveal ${(sourcesRevealed || isHistorical) ? "section-reveal-visible" : ""}`}
         >
-          <h2
-            id="make-it-yours"
-            className="mb-0 font-heading text-base font-semibold text-[#6b6b6b] dark:text-zinc-400 sm:text-lg"
-            style={{ fontFamily: "var(--font-heading)" }}
-          >
-            Make it yours
-          </h2>
-          <p className="mb-3 text-sm text-[#6b6b6b] dark:text-zinc-500">
-            Choose your tone, get today's brief ready to share. Posts are AI-generated from the same summary. Edit before you post.
+          <div className="border-t border-black/8 dark:border-white/8 pt-8" />
+          <p className="mb-1 text-xs font-medium tracking-widest uppercase text-foreground/40">
+            MAKE IT YOURS
+          </p>
+          <p className="mb-3 text-sm text-foreground/50">
+            Rewrite today&apos;s brief in your voice.
           </p>
           <ToneSelector
             selected={selectedTone}
@@ -339,31 +284,36 @@ export function NoisebriefContent() {
 
         </div>
       </main>
-      <footer className="border-t border-zinc-200 px-4 py-6 text-center text-xs text-[#6b6b6b] dark:border-white/5 dark:text-zinc-600 sm:text-sm">
-        <div className="flex items-center justify-center gap-3">
-          <span>
-            Built by{" "}
-            <a
-              href="https://barisermut.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="cursor-pointer text-primary hover:underline"
-            >
-              Barış Ermut
-            </a>
-          </span>
-          <span className="select-none text-[#1a1a1a]/20 dark:text-white/20" aria-hidden>|</span>
-          <div className="flex items-center [&_button]:min-w-0 [&_button]:min-h-0 [&_button]:p-0 [&_button]:leading-none [&_svg]:h-[1em] [&_svg]:w-[1em]">
-            <ThemeToggle />
-          </div>
-          <span className="select-none text-[#1a1a1a]/20 dark:text-white/20" aria-hidden>|</span>
-          <Link
-            href="/privacy"
-            className="cursor-pointer text-[#6b6b6b] transition-colors hover:text-foreground dark:text-zinc-500 dark:hover:text-white"
+      {briefLoaded && (
+        <button
+          type="button"
+          onClick={() => toneSectionRef.current?.scrollIntoView({ behavior: "smooth" })}
+          className={`fixed z-30 flex items-center gap-2 rounded-full border border-teal-500/50 bg-background dark:bg-[#0a0a0f] px-4 py-2.5 text-sm font-medium text-teal-600 dark:text-teal-400 shadow-lg transition-all duration-300 hover:border-teal-500 hover:bg-teal-500/10 right-4 sm:right-6 ${showFloatingCta ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`}
+          style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
+          aria-label="Scroll to Make it yours"
+        >
+          Make it yours ↓
+        </button>
+      )}
+      <footer className="border-t border-zinc-200 dark:border-white/5 px-4 py-6 text-center text-xs text-foreground/50 sm:text-xs">
+        <span>
+          Built by{" "}
+          <a
+            href="https://barisermut.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cursor-pointer hover:underline text-teal-600 dark:text-teal-400"
           >
-            Privacy Policy
-          </Link>
-        </div>
+            Barış Ermut
+          </a>
+        </span>
+        <span className="select-none mx-1.5" aria-hidden>·</span>
+        <Link
+          href="/privacy"
+          className="cursor-pointer hover:underline text-inherit"
+        >
+          Privacy Policy
+        </Link>
       </footer>
     </div>
   );

@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 
-const STORAGE_KEY = "noisebrief-theme";
+const STORAGE_KEY = "theme";
 export type Theme = "light" | "dark" | "system";
 
 function getStoredTheme(): Theme {
@@ -41,7 +41,15 @@ export function useTheme(): ThemeContextValue {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("system");
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "system";
+    try {
+      const t = localStorage.getItem(STORAGE_KEY);
+      return (t === "light" || t === "dark" || t === "system" ? t : "system") as Theme;
+    } catch {
+      return "system";
+    }
+  });
   const [resolvedDark, setResolvedDark] = useState(false);
 
   const setTheme = useCallback((next: Theme) => {
@@ -57,15 +65,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // On mount: read localStorage and apply to html
+  // On mount: read localStorage and sync state only (inline script already set html class before paint)
   useEffect(() => {
     const stored = getStoredTheme();
     setThemeState(stored);
-    const dark = getResolvedDark(stored);
-    setResolvedDark(dark);
-    const root = document.documentElement;
-    if (dark) root.classList.add("dark");
-    else root.classList.remove("dark");
+    setResolvedDark(getResolvedDark(stored));
   }, []);
 
   // When theme changes: sync html class (backup for any state-driven updates)

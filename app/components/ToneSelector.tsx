@@ -1,7 +1,6 @@
 "use client";
 
 import type { Tone } from "@/types";
-import { motion } from "framer-motion";
 
 const TONES: { tone: Tone; label: string; emoji: string }[] = [
   { tone: "Quirky", label: "Quirky", emoji: "😄" },
@@ -24,27 +23,29 @@ export function ToneSelector({
   loading,
 }: ToneSelectorProps) {
   return (
-    <div className="flex min-w-0 flex-wrap gap-2 sm:flex-nowrap">
-      {TONES.map(({ tone, label, emoji }) => (
-        <motion.button
-          key={tone}
-          type="button"
-          layout={false}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          style={{ willChange: "transform" }}
-          onClick={() => !loading && onSelect(tone)}
-          disabled={loading}
-          className={`flex min-h-[44px] min-w-0 shrink items-center justify-center rounded-lg border-2 px-3 py-2 text-sm font-medium transition-colors ${
-            selected === tone
-              ? "border-primary bg-primary/15 text-primary shadow-[0_0_12px_rgba(0,212,170,0.15)]"
-              : "border-zinc-200 bg-zinc-50 text-[#6b6b6b] hover:border-zinc-300 hover:text-[#1a1a1a] dark:border-white/10 dark:bg-white/5 dark:text-zinc-400 dark:hover:border-white/20 dark:hover:text-zinc-200"
-          } ${loading ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
-        >
-          <span className="mr-1.5 shrink-0">{emoji}</span>
-          <span className="truncate">{label}</span>
-        </motion.button>
-      ))}
+    <div className="flex flex-row gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:grid sm:grid-cols-6 sm:overflow-visible sm:mx-0 sm:px-0">
+      {TONES.map(({ tone, label, emoji }) => {
+        const isSelected = selected === tone;
+        return (
+          <button
+            key={tone}
+            type="button"
+            onClick={() => !loading && onSelect(tone)}
+            disabled={loading}
+            className={`
+              flex min-w-[80px] flex-col items-center gap-1.5 rounded-xl border px-4 py-3 transition-all duration-200
+              ${isSelected
+                ? "border-teal-500 bg-teal-500/10 dark:bg-teal-500/10 text-teal-700 dark:text-white"
+                : "border-foreground/20 dark:border-white/20 bg-foreground/8 dark:bg-white/8 text-foreground/70 dark:text-white/70 hover:border-foreground/30 dark:hover:border-white/30 hover:text-foreground/90 dark:hover:text-white/90"
+              }
+              ${loading ? "cursor-not-allowed opacity-70" : "cursor-pointer"}
+            `}
+          >
+            <span className="text-xl">{emoji}</span>
+            <span className="text-xs font-medium">{label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -36,7 +36,7 @@ function ParagraphWithKeywordComponent({ paragraph }: ParagraphWithKeywordProps)
         href={k.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-teal-400 underline underline-offset-2 decoration-teal-400/40 hover:decoration-teal-400 transition-colors"
+        className="text-teal-600 dark:text-teal-400 underline underline-offset-2 decoration-teal-600/40 dark:decoration-teal-400/40 hover:decoration-teal-600 dark:hover:decoration-teal-400 transition-colors"
       >
         {text.slice(k.idx, k.idx + k.keyword.length)}
       </a>

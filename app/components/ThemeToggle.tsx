@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
 import type { Theme } from "./ThemeProvider";
 import { useTheme } from "./ThemeProvider";
@@ -13,7 +13,10 @@ const TITLES: Record<Theme, string> = {
 };
 
 export function ThemeToggle() {
+  const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
+
+  useEffect(() => setMounted(true), []);
 
   const cycle = useCallback(() => {
     const i = ORDER.indexOf(theme);
@@ -22,7 +25,9 @@ export function ThemeToggle() {
   }, [theme, setTheme]);
 
   const title = TITLES[theme];
-  const Icon = theme === "light" ? Sun : theme === "dark" ? Moon : Monitor;
+  // Server and first client paint: always Monitor to avoid hydration mismatch (theme from localStorage differs from server's "system").
+  // After mount: show theme-based icon so saved dark/light shows correctly; flash is unavoidable when avoiding hydration error.
+  const Icon = !mounted ? Monitor : theme === "light" ? Sun : theme === "dark" ? Moon : Monitor;
 
   return (
     <button
@@ -30,9 +35,10 @@ export function ThemeToggle() {
       onClick={cycle}
       title={title}
       aria-label={title}
-      className="min-h-[44px] min-w-[44px] inline-flex cursor-pointer items-center justify-center text-[#6b6b6b] transition-colors hover:text-foreground dark:text-zinc-500 dark:hover:text-white"
+      suppressHydrationWarning
+      className="w-8 h-8 rounded-lg flex items-center justify-center bg-black/6 dark:bg-white/6 hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer transition-colors text-[#6b6b6b] hover:text-foreground dark:text-zinc-500 dark:hover:text-white"
     >
-      <Icon className="h-4 w-4 sm:h-[1em] sm:w-[1em] sm:text-sm" aria-hidden />
+      <Icon className="h-4 w-4 sm:h-[1em] sm:w-[1em] sm:text-sm" aria-hidden suppressHydrationWarning />
     </button>
   );
 }

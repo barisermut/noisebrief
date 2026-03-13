@@ -61,19 +61,15 @@ interface BriefContextValue {
   loading: boolean;
   error: string | null;
   summaryComplete: boolean;
-  skipRequested: boolean;
   sourcesRevealed: boolean;
   restoredFromCache: boolean;
-  skipRef: React.MutableRefObject<boolean>;
   selectedTone: Tone | null;
   setSelectedTone: (tone: Tone | null) => void;
   postCache: Map<Tone, string>;
   generatingTone: Tone | null;
   generateError: string | null;
-  makeItYoursVisible: boolean;
   handleSummaryComplete: () => void;
   handleToneSelect: (tone: Tone) => void;
-  setSkipRequested: (v: boolean) => void;
   setSummaryComplete: (v: boolean) => void;
   setSourcesRevealed: (v: boolean) => void;
   /** Current date from URL: today (/) or YYYY-MM-DD (/brief/YYYY-MM-DD). */
@@ -111,17 +107,14 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [summaryComplete, setSummaryComplete] = useState(false);
-  const [skipRequested, setSkipRequested] = useState(false);
   const [sourcesRevealed, setSourcesRevealed] = useState(false);
   const [restoredFromCache, setRestoredFromCache] = useState(false);
-  const skipRef = useRef(false);
   const [selectedTone, setSelectedTone] = useState<Tone | null>(null);
   const [postCache, setPostCache] = useState<Map<Tone, string>>(new Map());
   const postCacheRef = useRef<Map<Tone, string>>(postCache);
   postCacheRef.current = postCache;
   const [generatingTone, setGeneratingTone] = useState<Tone | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
-  const [makeItYoursVisible, setMakeItYoursVisible] = useState(false);
 
   // Restore from sessionStorage before browser paint to prevent typewriter replay.
   // useLayoutEffect runs after hydration but before the browser paints,
@@ -139,11 +132,8 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
     briefCache.set(stored.date, stored);
     setBrief(stored);
     setSummaryComplete(true);
-    setSkipRequested(true);
     setRestoredFromCache(true);
-    skipRef.current = true;
     setSourcesRevealed(true);
-    setMakeItYoursVisible(true);
     setPostCache(loadPostsFromStorage());
     setLoading(false);
   }, [today, pathname]);
@@ -188,22 +178,12 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
     [router, today]
   );
 
-  useEffect(() => {
-    if (sourcesRevealed) {
-      const t = setTimeout(() => setMakeItYoursVisible(true), 300);
-      return () => clearTimeout(t);
-    }
-  }, [sourcesRevealed]);
-
   const applyBrief = useCallback((nextBrief: BriefData, fromCache: boolean) => {
     setBrief(nextBrief);
     setError(null);
     setSummaryComplete(fromCache);
-    setSkipRequested(fromCache);
     setRestoredFromCache(fromCache);
-    skipRef.current = fromCache;
     setSourcesRevealed(fromCache);
-    setMakeItYoursVisible(fromCache);
     setPostCache(new Map());
   }, []);
 
@@ -221,11 +201,8 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       setBrief(null);
       setSummaryComplete(false);
-      setSkipRequested(false);
       setRestoredFromCache(false);
-      skipRef.current = false;
       setSourcesRevealed(false);
-      setMakeItYoursVisible(false);
       setPostCache(new Map());
 
       const isToday = date === today;
@@ -367,19 +344,15 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
       loading,
       error,
       summaryComplete,
-      skipRequested,
       sourcesRevealed,
       restoredFromCache,
-      skipRef,
       selectedTone,
       setSelectedTone,
       postCache,
       generatingTone,
       generateError,
-      makeItYoursVisible,
       handleSummaryComplete,
       handleToneSelect,
-      setSkipRequested,
       setSummaryComplete,
       setSourcesRevealed,
       selectedDate,
@@ -393,15 +366,12 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
       loading,
       error,
       summaryComplete,
-      skipRequested,
       sourcesRevealed,
       restoredFromCache,
-      skipRef,
       selectedTone,
       postCache,
       generatingTone,
       generateError,
-      makeItYoursVisible,
       handleSummaryComplete,
       handleToneSelect,
       selectedDate,
