@@ -187,7 +187,7 @@ export function NoisebriefContent() {
             <div className="min-w-0">
             <div className="mt-4 mb-3 sm:mt-6 sm:mb-4">
               {brief.date && (
-                <p className="text-xs font-medium tracking-widest uppercase text-[#1a1a1a]/40 dark:text-white/20 mb-1">
+                <p className="text-sm font-medium tracking-widest uppercase text-foreground/40 mb-1">
                   {isHistorical ? formatBriefDateLabel(brief.date) : "TODAY'S BRIEF"}
                 </p>
               )}
@@ -257,7 +257,7 @@ export function NoisebriefContent() {
           className={`mt-6 mb-6 min-w-0 section-reveal ${(sourcesRevealed || isHistorical) ? "section-reveal-visible" : ""}`}
         >
           <div className="border-t border-black/8 dark:border-white/8 pt-8" />
-          <p className="mb-1 text-xs font-medium tracking-widest uppercase text-foreground/40">
+          <p className="mb-1 text-sm font-medium tracking-widest uppercase text-foreground/40">
             MAKE IT YOURS
           </p>
           <p className="mb-3 text-sm text-foreground/50">
