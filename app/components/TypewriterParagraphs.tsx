@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import type { BriefParagraph } from "@/types/brief";
+import { ParagraphWithKeyword } from "./ParagraphWithKeyword";
 
 interface TypewriterParagraphsProps {
-  paragraphs: string[];
+  paragraphs: BriefParagraph[];
   className?: string;
   charDelay?: number;
   paragraphDelay?: number;
@@ -45,7 +47,7 @@ export function TypewriterParagraphs({
     }
   }, [skipToEnd, paragraphs, onComplete, completedFired, skipRef]);
 
-  const totalChars = paragraphs.reduce((sum, p) => sum + p.length, 0);
+  const totalChars = paragraphs.reduce((sum, p) => sum + p.text.length, 0);
   const totalDuration =
     totalChars * charDelay + (paragraphs.length - 1) * paragraphDelay;
 
@@ -66,9 +68,9 @@ export function TypewriterParagraphs({
 
       if (elapsed >= totalDuration && paragraphs.length > 0) {
         cancelAnimationFrame(rafId);
-        setParagraphIndex(paragraphs.length - 1);
-        setCharIndex(paragraphs[paragraphs.length - 1]?.length ?? 0);
-        setDisplayed(paragraphs[paragraphs.length - 1] ?? "");
+        setParagraphIndex(paragraphs.length);
+        setCharIndex(0);
+        setDisplayed("");
         if (onComplete && !completedFired) {
           setCompletedFired(true);
           onComplete();
@@ -81,7 +83,7 @@ export function TypewriterParagraphs({
       let cIdx = 0;
 
       for (let i = 0; i < paragraphs.length; i++) {
-        const pLen = paragraphs[i]?.length ?? 0;
+        const pLen = paragraphs[i]?.text.length ?? 0;
         const segmentDuration = pLen * charDelay;
         if (elapsed <= acc + segmentDuration) {
           pIdx = i;
@@ -101,7 +103,7 @@ export function TypewriterParagraphs({
 
       setParagraphIndex(pIdx);
       setCharIndex(cIdx);
-      const current = paragraphs[pIdx] ?? "";
+      const current = paragraphs[pIdx]?.text ?? "";
       setDisplayed(current.slice(0, cIdx));
 
       rafId = requestAnimationFrame(tick);
@@ -126,9 +128,9 @@ export function TypewriterParagraphs({
         const elapsed = Date.now() - startTimeRef.current;
 
         if (elapsed >= totalDuration && paragraphs.length > 0) {
-          setParagraphIndex(paragraphs.length - 1);
-          setCharIndex(paragraphs[paragraphs.length - 1]?.length ?? 0);
-          setDisplayed(paragraphs[paragraphs.length - 1] ?? "");
+          setParagraphIndex(paragraphs.length);
+          setCharIndex(0);
+          setDisplayed("");
           if (onComplete && !completedFired) {
             setCompletedFired(true);
             onComplete();
@@ -141,7 +143,7 @@ export function TypewriterParagraphs({
         let cIdx = 0;
 
         for (let i = 0; i < paragraphs.length; i++) {
-          const pLen = paragraphs[i]?.length ?? 0;
+          const pLen = paragraphs[i]?.text.length ?? 0;
           const segmentDuration = pLen * charDelay;
           if (elapsed <= acc + segmentDuration) {
             pIdx = i;
@@ -161,7 +163,7 @@ export function TypewriterParagraphs({
 
         setParagraphIndex(pIdx);
         setCharIndex(cIdx);
-        const current = paragraphs[pIdx] ?? "";
+        const current = paragraphs[pIdx]?.text ?? "";
         setDisplayed(current.slice(0, cIdx));
       }
     };
@@ -178,15 +180,15 @@ export function TypewriterParagraphs({
       <div className={className}>
         {paragraphs.map((p, i) => (
           <p key={i} className="mb-4 last:mb-0">
-            {p}
+            <ParagraphWithKeyword paragraph={p} />
           </p>
         ))}
       </div>
     );
   }
 
-  const currentParagraph = paragraphs[paragraphIndex] ?? "";
-  const isCurrentDone = charIndex >= currentParagraph.length;
+  const currentParagraphText = paragraphs[paragraphIndex]?.text ?? "";
+  const isCurrentDone = charIndex >= currentParagraphText.length;
   const allDone =
     paragraphIndex >= paragraphs.length - 1 && isCurrentDone;
 
@@ -194,7 +196,7 @@ export function TypewriterParagraphs({
     <div className={className}>
       {paragraphs.slice(0, paragraphIndex).map((p, i) => (
         <p key={i} className="mb-4 last:mb-0">
-          {p}
+          <ParagraphWithKeyword paragraph={p} />
         </p>
       ))}
       {paragraphIndex < paragraphs.length && (

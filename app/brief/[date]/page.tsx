@@ -3,14 +3,7 @@ import Link from "next/link";
 import { NoisebriefContent } from "@/app/components/NoisebriefContent";
 import { getBriefByDate } from "@/lib/brief-server";
 import { getSiteUrl } from "@/lib/site";
-
-const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
-function isValidDateParam(s: string): boolean {
-  if (!DATE_REGEX.test(s)) return false;
-  const d = new Date(s);
-  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
-}
+import { isValidDateString } from "@/lib/date";
 
 function formatBriefDate(dateStr: string): string {
   return new Date(dateStr + "Z").toLocaleDateString("en-US", {
@@ -34,7 +27,7 @@ export async function generateMetadata({
   params: Promise<{ date: string }>;
 }): Promise<Metadata> {
   const { date } = await params;
-  if (!date || !isValidDateParam(date)) {
+  if (!date || !isValidDateString(date)) {
     return {
       title: "Brief not found — Noisebrief",
       description: "Daily AI-generated tech news digest.",
@@ -87,7 +80,7 @@ export default async function BriefDatePage({
 }) {
   const { date } = await params;
 
-  if (!date || !isValidDateParam(date)) {
+  if (!date || !isValidDateString(date)) {
     return (
       <div className="mx-auto min-w-0 max-w-2xl px-4 py-8">
         <p className="text-sm text-muted-foreground">Invalid date.</p>

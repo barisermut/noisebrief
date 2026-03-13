@@ -12,13 +12,17 @@ export type BriefMeta = {
  * generateMetadata and the page component share one Supabase call.
  */
 export const getBriefByDate = cache(async (date: string): Promise<BriefMeta | null> => {
-  const admin = getSupabaseAdmin();
-  const { data, error } = await admin
-    .from("daily_briefs")
-    .select("date, title, summary")
-    .eq("date", date)
-    .maybeSingle();
+  try {
+    const admin = getSupabaseAdmin();
+    const { data, error } = await admin
+      .from("daily_briefs")
+      .select("date, title, summary")
+      .eq("date", date)
+      .maybeSingle();
 
-  if (error || !data) return null;
-  return data as BriefMeta;
+    if (error || !data) return null;
+    return data as BriefMeta;
+  } catch {
+    return null;
+  }
 });

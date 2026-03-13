@@ -3,8 +3,10 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import type { Tone } from "@/types";
+import { normalizeParagraphs } from "@/types/brief";
 import { TypewriterSummary } from "./TypewriterSummary";
 import { TypewriterParagraphs } from "./TypewriterParagraphs";
+import { ParagraphWithKeyword } from "./ParagraphWithKeyword";
 import { SummarySkeleton } from "./SummarySkeleton";
 import { SourceList } from "./SourceList";
 import { ToneSelector } from "./ToneSelector";
@@ -55,6 +57,11 @@ export function NoisebriefContent() {
 
   const displayPost =
     selectedTone !== null ? postCache.get(selectedTone) ?? null : null;
+
+  const normalizedParagraphs = useMemo(
+    () => normalizeParagraphs(brief?.paragraphs ?? []),
+    [brief?.paragraphs]
+  );
 
   const updatedAtLabel = useMemo(
     () => (brief?.generatedAt ? formatUpdatedAt(brief.generatedAt) : ""),
@@ -240,20 +247,20 @@ export function NoisebriefContent() {
             )}
             {(restoredFromCache || isHistorical) ? (
               <div className="text-base leading-relaxed text-[#1a1a1a] dark:text-zinc-300 sm:text-lg sm:leading-relaxed">
-                {brief.paragraphs.length > 0 ? (
-                  brief.paragraphs.map((p, i) => (
+                {normalizedParagraphs.length > 0 ? (
+                  normalizedParagraphs.map((p, i) => (
                     <p key={i} className="mb-4 last:mb-0">
-                      {p}
+                      <ParagraphWithKeyword paragraph={p} />
                     </p>
                   ))
                 ) : (
                   <p>{brief.summary}</p>
                 )}
               </div>
-            ) : brief.paragraphs.length > 0 ? (
+            ) : normalizedParagraphs.length > 0 ? (
               <div className="text-base leading-relaxed text-[#1a1a1a] dark:text-zinc-300 sm:text-lg sm:leading-relaxed">
                 <TypewriterParagraphs
-                  paragraphs={brief.paragraphs}
+                  paragraphs={normalizedParagraphs}
                   onComplete={handleSummaryComplete}
                   skipToEnd={skipRequested}
                   skipRef={skipRef}

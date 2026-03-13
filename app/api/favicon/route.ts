@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ratelimiter, getClientIp } from "@/lib/ratelimit";
 
 const FAVICON_BASE = "https://www.google.com/s2/favicons";
 const DOMAIN_MAX_LENGTH = 253;
@@ -12,6 +13,17 @@ const DOMAIN_MAP: Record<string, string> = {
 };
 
 export async function GET(request: NextRequest) {
+  if (ratelimiter) {
+    const ip = getClientIp(request);
+    const { success } = await ratelimiter.limit(ip);
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again in a moment." },
+        { status: 429 }
+      );
+    }
+  }
+
   const domain = request.nextUrl.searchParams.get("domain");
   if (!domain || typeof domain !== "string") {
     return NextResponse.json({ error: "Missing domain" }, { status: 400 });

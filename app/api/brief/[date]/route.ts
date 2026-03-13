@@ -1,14 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { isValidDateString } from "@/lib/date";
 import type { Source } from "@/types";
-
-const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
-function isValidDateString(s: string): boolean {
-  if (!DATE_REGEX.test(s)) return false;
-  const d = new Date(s);
-  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
-}
 
 export async function GET(
   _request: Request,
@@ -57,7 +50,7 @@ export async function GET(
       created_at: string;
     };
     const paras = Array.isArray(row.paragraphs)
-      ? (row.paragraphs as string[])
+      ? row.paragraphs
       : row.summary
         ? [row.summary]
         : [];

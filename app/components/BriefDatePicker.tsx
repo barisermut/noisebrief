@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Calendar, X } from "lucide-react";
 import { DayPicker } from "react-day-picker";
+import { getTodayDateString } from "@/lib/date";
 
 function useIsMobile(): boolean {
   const [isMobile, setIsMobile] = useState(false);
@@ -14,10 +15,6 @@ function useIsMobile(): boolean {
     return () => mql.removeEventListener("change", handler);
   }, []);
   return isMobile;
-}
-
-function getTodayDateString(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 function dateToYYYYMMDD(d: Date): string {

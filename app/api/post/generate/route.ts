@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { generateLinkedInPost } from "@/lib/claude";
+import { ratelimiter, getClientIp } from "@/lib/ratelimit";
 import type { Database } from "@/types/supabase";
 import type { Tone } from "@/types";
 
@@ -41,17 +42,21 @@ function truncatePostWithHashtags(post: string, maxLen: number): string {
 /** Type for generated_posts jsonb: tone -> post text */
 type GeneratedPostsMap = Record<string, string>;
 
-/** Validate YYYY-MM-DD date string. */
-function isValidDateString(s: string): boolean {
-  if (typeof s !== "string" || s.length !== 10) return false;
-  const [y, m, d] = s.split("-").map(Number);
-  if (Number.isNaN(y) || Number.isNaN(m) || Number.isNaN(d)) return false;
-  const date = new Date(y, m - 1, d);
-  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
-}
+import { isValidDateString } from "@/lib/date";
 
 export async function POST(request: NextRequest) {
   try {
+    if (ratelimiter) {
+      const ip = getClientIp(request);
+      const { success } = await ratelimiter.limit(ip);
+      if (!success) {
+        return NextResponse.json(
+          { error: "Too many requests. Please try again in a moment." },
+          { status: 429 }
+        );
+      }
+    }
+
     const body = await request.json();
     const { tone, summary, briefDate: rawBriefDate } = body as {
       tone?: string;

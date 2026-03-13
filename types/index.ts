@@ -14,12 +14,16 @@ export interface Source {
   publishedAt: string;
 }
 
+import type { BriefParagraph, ParagraphKeyword, ParagraphsField } from "./brief";
+export type { BriefParagraph, ParagraphKeyword, ParagraphsField };
+export { normalizeParagraphs } from "./brief";
+
 export interface DailyBrief {
   id: string;
   date: string;
   title: string;
   summary: string;
-  paragraphs: string[];
+  paragraphs: ParagraphsField;
   sources: Source[];
   createdAt: string;
 }

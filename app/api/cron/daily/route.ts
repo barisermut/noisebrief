@@ -66,7 +66,7 @@ export async function GET(request: Request) {
 
     let title: string;
     let summary: string;
-    let paragraphs: string[];
+    let paragraphs: Awaited<ReturnType<typeof generateDailySummary>>["paragraphs"];
     let usedSources: Awaited<ReturnType<typeof generateDailySummary>>["usedSources"];
     try {
       const result = await generateDailySummary(sourcesToUse);

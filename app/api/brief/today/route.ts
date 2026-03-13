@@ -13,7 +13,7 @@ interface BriefRow {
 
 function formatBriefResponse(row: BriefRow, isFallback: boolean) {
   const paras = Array.isArray(row.paragraphs)
-    ? (row.paragraphs as string[])
+    ? row.paragraphs
     : row.summary
       ? [row.summary]
       : [];

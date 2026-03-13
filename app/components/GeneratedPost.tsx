@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Copy, FileText } from "lucide-react";
 
 interface GeneratedPostProps {
@@ -18,7 +18,7 @@ export function GeneratedPost({ post }: GeneratedPostProps) {
     };
   }, []);
 
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
     try {
       setCopyError(null);
       await navigator.clipboard.writeText(post);
@@ -28,7 +28,7 @@ export function GeneratedPost({ post }: GeneratedPostProps) {
     } catch {
       setCopyError("Couldn't copy. Please try again.");
     }
-  };
+  }, [post]);
 
   return (
     <div

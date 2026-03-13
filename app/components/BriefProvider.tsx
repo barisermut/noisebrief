@@ -11,12 +11,12 @@ import {
   useState,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import type { Source, Tone } from "@/types";
+import type { ParagraphsField, Source, Tone } from "@/types";
 
 export interface BriefData {
   title: string | null;
   summary: string;
-  paragraphs: string[];
+  paragraphs: ParagraphsField;
   sources: Source[];
   generatedAt: string | null;
   date: string | null;
@@ -28,9 +28,7 @@ const POSTS_STORAGE_KEY = "noisebrief_posts";
 /** In-memory cache of briefs by date (YYYY-MM-DD) to avoid refetch flash when switching dates. */
 const briefCache = new Map<string, BriefData>();
 
-function getTodayDateString(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+import { getTodayDateString } from "@/lib/date";
 
 function loadBriefFromStorage(): BriefData | null {
   if (typeof window === "undefined") return null;
