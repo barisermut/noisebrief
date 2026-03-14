@@ -47,17 +47,9 @@ A Vercel cron job runs at 8 AM UTC: it fetches all RSS sources in parallel, dedu
 
 ## Environment variables
 
-| Variable                     | What it's for                          | Where to get it                |
-|-----------------------------|----------------------------------------|--------------------------------|
-| NEXT_PUBLIC_SUPABASE_URL    | Supabase project URL                   | Supabase dashboard             |
-| NEXT_PUBLIC_SUPABASE_ANON_KEY | Supabase anon (public) key          | Supabase dashboard             |
-| SUPABASE_SERVICE_ROLE_KEY   | Supabase service role (server-only)   | Supabase dashboard             |
-| ANTHROPIC_API_KEY           | Claude API (summary + tone generation) | Anthropic console               |
-| CRON_SECRET                 | Auth for cron endpoints                | You choose; set in Vercel      |
-| RESEND_API_KEY              | Sending welcome and digest emails      | resend.com                     |
-| UPSTASH_REDIS_REST_URL      | Redis for rate limiting                | upstash.com/redis              |
-| UPSTASH_REDIS_REST_TOKEN    | Redis REST token                       | upstash.com/redis              |
-| NEXT_PUBLIC_SITE_URL        | Base URL (metadata, sitemap, OG)      | e.g. https://noisebrief.com    |
+Copy `.env.example` to `.env.local` and fill in the required values.
+
+See [`.env.example`](.env.example) for all variables with descriptions of what each one is for and where to get the credentials.
 
 ---
 

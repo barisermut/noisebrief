@@ -19,6 +19,7 @@
 
 # production
 /build
+/dist/
 
 # misc
 .DS_Store
@@ -40,14 +41,11 @@ yarn-error.log*
 # vercel
 .vercel
 
-# Cursor internal tooling (agents, commands — local only)
-.cursor/agents/
-.cursor/commands/
-.cursor/rules/
-
-# Internal planning docs (V2 implementation docs — not for repo)
-docs/
+# Cursor (local tooling — not for repo)
+.cursor/
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.cursor/
+.cursorrules
