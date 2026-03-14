@@ -52,8 +52,8 @@ function paragraphToHtml(p: BriefParagraph): string {
   return `<p style="color:#3f3f46;font-size:15px;line-height:1.75;font-family:Arial,sans-serif;margin:0 0 20px;">${content}</p>`;
 }
 
-const LOGO_SVG =
-  '<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 6H11.5L16 13.5V6H20.5V26H16.5L11.5 17.5V26H7V6Z" fill="#00d4aa"/><path d="M22 11 Q25 13.5 25 16 Q25 18.5 22 21" stroke="#00d4aa" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.9"/><path d="M23.5 8.5 Q28 12 28 16 Q28 20 23.5 23.5" stroke="#00d4aa" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.5"/><path d="M25 6 Q31 10.5 31 16 Q31 21.5 25 26" stroke="#00d4aa" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.25"/></svg>';
+const EMAIL_LOGO_IMG =
+  '<img src="https://www.noisebrief.com/logo.png" width="40" height="40" alt="Noisebrief" style="display:block;border:0;">';
 
 export interface DigestBrief {
   title: string;
@@ -95,7 +95,7 @@ export async function sendDigestEmail(
     // Header
     '<tr><td style="background:#f4f4f0;padding:32px 40px;" bgcolor="#f4f4f0">',
     '<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="vertical-align:middle;">',
-    LOGO_SVG,
+    EMAIL_LOGO_IMG,
     '</td><td style="vertical-align:middle;padding-left:10px;"><span style="color:#1a1a1a;font-size:22px;font-family:Arial,sans-serif;font-weight:700;letter-spacing:-0.5px;">noisebrief<span style="color:#00d4aa;">.</span></span></td></tr></table>',
     `<p style="color:#888888;font-size:12px;font-family:Arial,sans-serif;margin:8px 0 0 0;letter-spacing:0.05em;">${escapeHtml(fullDate)}</p>`,
     "</td></tr>",
@@ -184,9 +184,10 @@ export async function sendWelcomeEmail(
     '<tr><td align="center" style="padding:0;">',
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;display:block;">',
 
+    // Header — same structure as sendDigestEmail: SVG icon + wordmark with teal dot + date
     '<tr><td style="background:#f4f4f0;padding:32px 40px;" bgcolor="#f4f4f0">',
     '<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="vertical-align:middle;">',
-    LOGO_SVG,
+    EMAIL_LOGO_IMG,
     '</td><td style="vertical-align:middle;padding-left:10px;"><span style="color:#1a1a1a;font-size:22px;font-family:Arial,sans-serif;font-weight:700;letter-spacing:-0.5px;">noisebrief<span style="color:#00d4aa;">.</span></span></td></tr></table>',
     `<p style="color:#888888;font-size:12px;font-family:Arial,sans-serif;margin:8px 0 0 0;letter-spacing:0.05em;">${escapeHtml(fullDate)}</p>`,
     "</td></tr>",

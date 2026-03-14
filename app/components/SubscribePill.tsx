@@ -87,7 +87,7 @@ export function SubscribePill({ className, onExpandedChange }: { className?: str
     inputRef.current?.focus();
   }, []);
 
-  const isIdle = state === "idle";
+  const showInputRow = state === "expanded" || state === "loading";
 
   return (
     <motion.div
@@ -97,10 +97,10 @@ export function SubscribePill({ className, onExpandedChange }: { className?: str
       className={`flex items-center h-9 rounded-full border bg-background overflow-hidden ${widthClass} ${borderColor} ${className ?? ""}`}
       style={{ originX: 1 }}
     >
-      {/* Input row: always in DOM (hidden when idle) so focus() in touch handler runs on existing element — required for iOS keyboard */}
+      {/* Input row: always in DOM (hidden unless expanded/loading) so focus() in touch handler runs on existing element — required for iOS keyboard */}
       <div
-        className={`flex items-center w-full px-3 gap-2 ${isIdle ? "absolute opacity-0 w-0 h-0 overflow-hidden pointer-events-none" : ""}`}
-        aria-hidden={isIdle}
+        className={`flex items-center w-full px-3 gap-2 ${!showInputRow ? "absolute opacity-0 w-0 h-0 overflow-hidden pointer-events-none" : ""}`}
+        aria-hidden={!showInputRow}
       >
         <Mail className="h-3.5 w-3.5 shrink-0 text-foreground/40" />
         <input
@@ -135,7 +135,7 @@ export function SubscribePill({ className, onExpandedChange }: { className?: str
       </div>
 
       <AnimatePresence mode="wait" initial={false}>
-        {isIdle && (
+        {state === "idle" && (
           <motion.button
             key="idle"
             initial={{ opacity: 0 }}
