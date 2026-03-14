@@ -109,6 +109,11 @@ export function SubscribePill({ className, onExpandedChange }: { className?: str
           value={email}
           onChange={e => setEmail(e.target.value)}
           onKeyDown={e => e.key === "Enter" && submit()}
+          onBlur={() => {
+            if (email.trim() === "" && state === "expanded") {
+              setTimeout(() => setState("idle"), 100);
+            }
+          }}
           placeholder="your@email.com"
           disabled={state === "loading"}
           autoComplete="email"
