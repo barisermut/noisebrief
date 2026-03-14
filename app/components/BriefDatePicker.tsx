@@ -61,6 +61,9 @@ interface BriefDatePickerProps {
   onSelectDate: (date: string) => void;
   dates: string[];
   loadingDates: boolean;
+  /** When provided, picker is controlled; parent can hide floating CTA when open. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 function CalendarPanel({
@@ -208,8 +211,19 @@ export function BriefDatePicker({
   onSelectDate,
   dates,
   loadingDates,
+  open: controlledOpen,
+  onOpenChange,
 }: BriefDatePickerProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = useCallback(
+    (value: boolean) => {
+      if (onOpenChange) onOpenChange(value);
+      if (!isControlled) setInternalOpen(value);
+    },
+    [onOpenChange, isControlled]
+  );
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const isMobile = useIsMobile();
@@ -261,7 +275,7 @@ export function BriefDatePicker({
       <button
         ref={buttonRef}
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => setOpen(!open)}
         className="flex min-h-[44px] min-w-[44px] cursor-pointer items-center gap-1.5 px-2 py-2 text-xs text-[#6b6b6b] transition-colors hover:text-[#1a1a1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d4aa]/50 dark:text-white/40 dark:hover:text-white/70 sm:min-w-0 sm:px-2"
         aria-expanded={open}
         aria-haspopup="dialog"

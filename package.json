@@ -8,8 +8,7 @@
     "start": "next start",
     "clean": "rm -rf .next node_modules/.cache",
     "lint": "eslint",
-    "favicon:ico": "node scripts/generate-favicon-ico.cjs",
-    "og:image": "node scripts/generate-og-image.cjs"
+    "favicon:ico": "node scripts/generate-favicon-ico.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

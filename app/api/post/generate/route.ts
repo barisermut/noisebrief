@@ -57,12 +57,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const body = await request.json();
-    const { tone, summary, briefDate: rawBriefDate } = body as {
-      tone?: string;
-      summary?: string;
-      briefDate?: string;
-    };
+    let body: { tone?: string; summary?: string; briefDate?: string };
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 }
+      );
+    }
+    const { tone, summary, briefDate: rawBriefDate } = body;
 
     if (!tone || typeof summary !== "string") {
       return NextResponse.json(

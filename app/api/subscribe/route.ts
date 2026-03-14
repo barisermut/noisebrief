@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { subscribeRatelimiter, getClientIp } from "@/lib/ratelimit";
+import { sendWelcomeEmail } from "@/lib/resend";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -85,9 +86,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "subscribed" });
     }
 
+    const unsubscribeToken = crypto.randomUUID();
     const { error: insertError } = await admin.from("email_subscribers").insert({
       email,
-      unsubscribe_token: crypto.randomUUID(),
+      unsubscribe_token: unsubscribeToken,
     });
 
     if (insertError) {
@@ -100,6 +102,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    try {
+      await sendWelcomeEmail(email, unsubscribeToken);
+    } catch (err) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Welcome email failed after subscribe", err);
+      }
+    }
     return NextResponse.json({ message: "subscribed" });
   } catch {
     if (process.env.NODE_ENV === "development") {

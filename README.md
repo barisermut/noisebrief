@@ -1,101 +1,72 @@
-# Noisebrief
+# noisebrief.
 
-> Today's tech noise. Briefly.
+Today's tech noise. Briefly.
 
-Noisebrief is a daily tech intelligence briefing that cuts through the noise.
-Every day, it pulls the most relevant stories and drama from across the web,
-distills them into a sharp AI-generated summary, and lets you turn it into
-a ready-to-share recap — in whatever tone fits your mood.
-
-No feeds to manage. No subscriptions to read. Just open it, get briefed,
-and share anywhere.
-
-Live at: https://noisebrief.vercel.app
+[noisebrief.com](https://noisebrief.com) — a daily one-pager that answers "what happened today in tech?" It pulls from Hacker News, TechCrunch, The Verge, Wired, and Reddit; summarizes everything with AI into two punchy paragraphs; and lets you generate shareable recaps in six tones or get the whole thing by email every morning. No feeds to manage. Just open it, get briefed, move on.
 
 ---
 
 ## What it does
 
-- Pulls daily tech news from Hacker News, TechCrunch, The Verge,
-  Wired, and Reddit (via RSS) — once per day via cron job
-- Deduplicates against yesterday's brief so you never see the same headlines twice
-- Uses Claude AI to summarize everything into a punchy title +
-  2-3 sharp paragraphs
-- Lets users generate a ready-to-share recap in 6 tones:
-  Quirky, Formal, Cheesy, Savage, Inspirational, TL;DR
-- Browse past briefs through a calendar date picker
-- Copy to clipboard and share anywhere
-- Light and dark theme with system preference detection
+- Fetches RSS from Hacker News, TechCrunch, The Verge, Wired, and key Reddit subs — once per day via cron.
+- Summarizes the lot with Claude into a title and 2–3 paragraphs, deduped against yesterday.
+- Lets you rewrite the brief in six tones (Quirky, Formal, Cheesy, Savage, Inspirational, TL;DR) and copy or share.
+- Sends a daily email digest at 8:30 AM UTC to subscribers, with a welcome email on first signup.
+
+---
 
 ## Stack
 
-| Layer | Tool |
-|---|---|
-| Framework | Next.js 16 (App Router) + TypeScript |
-| Styling | Tailwind CSS v4 + shadcn/ui |
-| Animations | Framer Motion |
-| Calendar | React DayPicker |
-| Database | Supabase (Postgres) |
-| AI | Anthropic Claude API (Sonnet for summaries, Haiku for recaps) |
-| RSS Parsing | rss-parser |
-| Hosting | Vercel |
-| Cron | Vercel Cron Jobs (daily at 8AM UTC) |
+| Technology      | Purpose                                      |
+|-----------------|----------------------------------------------|
+| Next.js 16      | App Router, API routes, cron, OG image       |
+| TypeScript      | Strict typing across app and API             |
+| Tailwind CSS v4 | Styling; Syne font, dark/light theme         |
+| Supabase        | Postgres for briefs, subscribers, cache      |
+| Anthropic Claude API | Daily summary (Sonnet), tone posts (Haiku) |
+| Resend          | Welcome and digest emails                    |
+| Vercel          | Hosting and cron (daily 8AM, digest 8:30AM)  |
+| Upstash Redis   | Rate limiting (subscribe, post, favicon)      |
 
-## Content Sources
+---
 
-- Hacker News
-- TechCrunch
-- The Verge
-- Wired
-- Reddit (r/technology, r/artificial, r/singularity, r/tech,
-  r/MachineLearning, r/ProductManagement)
+## How it works
 
-## Environment Variables
+A Vercel cron job runs at 8 AM UTC: it fetches all RSS sources in parallel, dedupes against yesterday’s brief, sends the batch to Claude for one summary call, and stores the result in Supabase. The site serves today’s (or latest) brief via API; users can browse by date, generate tone variants (cached in DB), and subscribe for the daily digest. The digest cron runs at 8:30 AM UTC and emails all active subscribers using the same brief; new subscribers get a welcome email immediately.
 
-See `.env.example` for descriptions. Copy it to `.env.local` and fill in your values.
+---
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-ANTHROPIC_API_KEY=
-CRON_SECRET=
-NEXT_PUBLIC_SITE_URL=
-```
+## Running locally
 
-## Running Locally
+1. Clone the repo.
+2. Run `npm install`.
+3. Copy `.env.example` to `.env.local` and fill in every value.
+4. Run `npm run dev` and open http://localhost:3000.
 
-```bash
-npm install
-npm run dev
-```
+---
 
-Trigger the daily cron manually:
+## Environment variables
 
-```bash
-curl -X GET http://localhost:3000/api/cron/daily \
-  -H "authorization: Bearer YOUR_CRON_SECRET"
-```
+| Variable                     | What it's for                          | Where to get it                |
+|-----------------------------|----------------------------------------|--------------------------------|
+| NEXT_PUBLIC_SUPABASE_URL    | Supabase project URL                   | Supabase dashboard             |
+| NEXT_PUBLIC_SUPABASE_ANON_KEY | Supabase anon (public) key          | Supabase dashboard             |
+| SUPABASE_SERVICE_ROLE_KEY   | Supabase service role (server-only)   | Supabase dashboard             |
+| ANTHROPIC_API_KEY           | Claude API (summary + tone generation) | Anthropic console               |
+| CRON_SECRET                 | Auth for cron endpoints                | You choose; set in Vercel      |
+| RESEND_API_KEY              | Sending welcome and digest emails      | resend.com                     |
+| UPSTASH_REDIS_REST_URL      | Redis for rate limiting                | upstash.com/redis              |
+| UPSTASH_REDIS_REST_TOKEN    | Redis REST token                       | upstash.com/redis              |
+| NEXT_PUBLIC_SITE_URL        | Base URL (metadata, sitemap, OG)      | e.g. https://noisebrief.com    |
 
-### Scripts
+---
 
-- **Favicons** — Regenerate PNG favicons from the source SVG:
-  ```bash
-  node scripts/generate-favicons.js
-  ```
+## Built by
 
-- **Favicon ICO** — Generate `favicon.ico` from the PNG:
-  ```bash
-  node scripts/generate-favicon-ico.cjs
-  ```
+Built by [Barış Ermut](https://barisermut.com) — Senior PM learning to ship things with AI.
 
-- **OG Image** — Generate the Open Graph image:
-  ```bash
-  node scripts/generate-og-image.cjs
-  ```
+---
 
-All scripts require `sharp` (in devDependencies).
+## License
 
-## About
-
-Built by [Barış Ermut](https://barisermut.com).
+MIT

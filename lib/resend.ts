@@ -1,15 +1,17 @@
 import { Resend } from "resend";
 import type { BriefParagraph } from "@/types/brief";
+import { maskEmail } from "@/lib/maskEmail";
 
-const apiKey = process.env.RESEND_API_KEY;
-if (!apiKey) {
-  throw new Error("Missing RESEND_API_KEY");
+function getResendClient() {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error("Missing RESEND_API_KEY");
+  return new Resend(key);
 }
-const resend = new Resend(apiKey);
 
 const FROM = "Noisebrief <briefs@noisebrief.com>";
 const REPLY_TO = "briefs@noisebrief.com";
 const UNSUBSCRIBE_BASE = "https://www.noisebrief.com/unsubscribe";
+const SITE_URL = "https://www.noisebrief.com";
 
 function escapeHtml(s: string): string {
   return s
@@ -23,31 +25,35 @@ function escapeAttr(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
 
-/** Renders one paragraph as HTML: escaped text with optional first keyword linked. */
+/** Renders one paragraph: escaped text with every keyword replaced by a link. Processes by position to avoid double-replace. */
 function paragraphToHtml(p: BriefParagraph): string {
   if (p.keywords.length === 0) {
-    return `<p style="margin:0 0 1em;line-height:1.5;">${escapeHtml(p.text)}</p>`;
+    return `<p style="color:#3f3f46;font-size:15px;line-height:1.75;font-family:Arial,sans-serif;margin:0 0 20px;">${escapeHtml(p.text)}</p>`;
   }
-  const first = p.keywords[0];
-  const idx = p.text.indexOf(first.keyword);
-  if (idx === -1) {
-    return `<p style="margin:0 0 1em;line-height:1.5;">${escapeHtml(p.text)}</p>`;
+  type WithIdx = { keyword: string; url: string; idx: number };
+  const withIdx: WithIdx[] = [];
+  for (const k of p.keywords) {
+    const idx = p.text.indexOf(k.keyword);
+    if (idx >= 0) withIdx.push({ keyword: k.keyword, url: k.url, idx });
   }
-  const before = p.text.slice(0, idx);
-  const after = p.text.slice(idx + first.keyword.length);
-  const link = `<a href="${escapeAttr(first.url)}" style="color:#888;text-decoration:underline;">${escapeHtml(first.keyword)}</a>`;
-  const content = escapeHtml(before) + link + escapeHtml(after);
-  return `<p style="margin:0 0 1em;line-height:1.5;">${content}</p>`;
+  withIdx.sort((a, b) => a.idx - b.idx);
+  let lastEnd = 0;
+  const parts: string[] = [];
+  for (const k of withIdx) {
+    if (k.idx < lastEnd) continue;
+    parts.push(escapeHtml(p.text.slice(lastEnd, k.idx)));
+    parts.push(
+      `<a href="${escapeAttr(k.url)}" style="color:#00a87e;text-decoration:none;">${escapeHtml(k.keyword)}</a>`
+    );
+    lastEnd = k.idx + k.keyword.length;
+  }
+  parts.push(escapeHtml(p.text.slice(lastEnd)));
+  const content = parts.join("");
+  return `<p style="color:#3f3f46;font-size:15px;line-height:1.75;font-family:Arial,sans-serif;margin:0 0 20px;">${content}</p>`;
 }
 
-function maskEmail(email: string): string {
-  const at = email.indexOf("@");
-  if (at <= 0) return "***@***";
-  const local = email.slice(0, at);
-  const domain = email.slice(at + 1);
-  const prefix = local.length >= 3 ? local.slice(0, 3) : local.slice(0, 1) || "?";
-  return `${prefix}***@${domain}`;
-}
+const LOGO_SVG =
+  '<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 6H11.5L16 13.5V6H20.5V26H16.5L11.5 17.5V26H7V6Z" fill="#00d4aa"/><path d="M22 11 Q25 13.5 25 16 Q25 18.5 22 21" stroke="#00d4aa" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.9"/><path d="M23.5 8.5 Q28 12 28 16 Q28 20 23.5 23.5" stroke="#00d4aa" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.5"/><path d="M25 6 Q31 10.5 31 16 Q31 21.5 25 26" stroke="#00d4aa" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.25"/></svg>';
 
 export interface DigestBrief {
   title: string;
@@ -60,45 +66,168 @@ export async function sendDigestEmail(
   brief: DigestBrief,
   unsubscribeToken: string
 ): Promise<void> {
+  const d = new Date(brief.date + "T00:00:00Z");
+  const formattedDate = d.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+  const fullDate = d
+    .toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: "UTC",
+    })
+    .toUpperCase();
+
+  const subject = `Noisebrief | ${formattedDate} — ${brief.title}`;
   const bodyParagraphs = brief.paragraphs.map(paragraphToHtml).join("");
   const unsubscribeUrl = `${UNSUBSCRIBE_BASE}?token=${encodeURIComponent(unsubscribeToken)}`;
 
-  const html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="background:#0a0a0a;color:#fff;font-family:system-ui,-apple-system,sans-serif;margin:0;padding:24px;">
-  <div style="max-width:560px;margin:0 auto;">
-    <p style="margin:0 0 4px;font-size:18px;font-weight:600;letter-spacing:-0.02em;">noisebrief.</p>
-    <p style="margin:0 0 24px;color:#888;font-size:14px;">${escapeHtml(brief.date)}</p>
-    <div style="margin-bottom:24px;">
-      ${bodyParagraphs}
-    </div>
-    <p style="margin:0;color:#888;font-size:12px;">You're receiving this because you subscribed at noisebrief.com. <a href="${escapeAttr(unsubscribeUrl)}" style="color:#888;text-decoration:underline;">Unsubscribe</a></p>
-  </div>
-</body>
-</html>`.trim();
+  const html = [
+    '<!DOCTYPE html><html style="color-scheme: light only;"><head><meta charset="utf-8"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"></head><body style="margin:0;">',
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f0;" bgcolor="#f4f4f0">',
+    '<tr><td align="center" style="padding:0;">',
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;display:block;">',
+
+    // Header
+    '<tr><td style="background:#f4f4f0;padding:32px 40px;" bgcolor="#f4f4f0">',
+    '<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="vertical-align:middle;">',
+    LOGO_SVG,
+    '</td><td style="vertical-align:middle;padding-left:10px;"><span style="color:#1a1a1a;font-size:22px;font-family:Arial,sans-serif;font-weight:700;letter-spacing:-0.5px;">noisebrief<span style="color:#00d4aa;">.</span></span></td></tr></table>',
+    `<p style="color:#888888;font-size:12px;font-family:Arial,sans-serif;margin:8px 0 0 0;letter-spacing:0.05em;">${escapeHtml(fullDate)}</p>`,
+    "</td></tr>",
+
+    // Body
+    '<tr><td style="background:#f4f4f0;padding:32px 40px 24px 40px;" bgcolor="#f4f4f0">',
+    `<p style="color:#1a1a1a;font-size:22px;font-weight:700;font-family:Arial,sans-serif;line-height:1.3;margin:0 0 24px;">${escapeHtml(brief.title)}</p>`,
+    bodyParagraphs,
+    "</td></tr>",
+
+    // Divider
+    '<tr><td style="background:#f4f4f0;padding:0 40px;" bgcolor="#f4f4f0"><div style="border-top:1px solid #e4e4e2;margin:8px 0 28px 0;"></div></td></tr>',
+
+    // CTA
+    '<tr><td align="center" style="background:#f4f4f0;padding:0 40px 32px 40px;" bgcolor="#f4f4f0">',
+    `<a href="${escapeAttr(SITE_URL)}" style="background:#0a0a0f;color:#ffffff;padding:11px 24px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px;font-weight:600;text-decoration:none;display:inline-block;">View sources &amp; past briefs →</a>`,
+    "</td></tr>",
+
+    // Footer
+    '<tr><td style="background:#f4f4f0;padding:24px 40px;text-align:center;" bgcolor="#f4f4f0">',
+    '<p style="color:#888888;font-size:12px;font-family:Arial,sans-serif;margin:0;">You\'re receiving this because you subscribed at noisebrief.com.</p>',
+    `<p style="color:#888888;font-size:12px;font-family:Arial,sans-serif;margin:8px 0 0 0;"><a href="${escapeAttr(unsubscribeUrl)}" style="color:#888888;font-size:12px;text-decoration:underline;">Unsubscribe</a></p>`,
+    "</td></tr>",
+
+    "</table></td></tr></table></body></html>",
+  ].join("");
 
   try {
-    const { error } = await resend.emails.send({
+    const { error } = await getResendClient().emails.send({
       from: FROM,
       to: [to],
       replyTo: REPLY_TO,
-      subject: `Noisebrief — ${brief.title}`,
+      subject,
       html,
     });
     if (error) {
-      console.error(
-        `Digest send failed to=${maskEmail(to)} date=${brief.date}`,
-        error
-      );
+      if (process.env.NODE_ENV === "development") {
+        console.error(
+          `Digest send failed to=${maskEmail(to)} date=${brief.date}`,
+          error
+        );
+      }
       throw error;
     }
   } catch (err) {
-    console.error(
-      `Digest send failed to=${maskEmail(to)} date=${brief.date}`,
-      err
-    );
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        `Digest send failed to=${maskEmail(to)} date=${brief.date}`,
+        err
+      );
+    }
+    throw err;
+  }
+}
+
+/** Welcome email sent immediately after subscribe. Same layout/styling as digest. */
+export async function sendWelcomeEmail(
+  to: string,
+  unsubscribeToken: string
+): Promise<void> {
+  const now = new Date();
+  const fullDate = now
+    .toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: "UTC",
+    })
+    .toUpperCase();
+
+  const unsubscribeUrl = `${UNSUBSCRIBE_BASE}?token=${encodeURIComponent(unsubscribeToken)}`;
+
+  const p1 = "Welcome to Noisebrief, your daily one-pager on what's happening in tech. No noise, no fluff. Just the signal that matters.";
+  const p2 = "Every day at 8:30 AM UTC, we fetch the latest from Hacker News, TechCrunch, The Verge, Wired, and the best corners of Reddit, summarize it with AI, and send it straight to your inbox.";
+  const p3 = "Your first brief arrives tomorrow morning. Until then, you can read today's brief and browse past ones on the site.";
+  const bodyParagraphs = [
+    `<p style="color:#3f3f46;font-size:15px;line-height:1.75;font-family:Arial,sans-serif;margin:0 0 20px;">${escapeHtml(p1)}</p>`,
+    `<p style="color:#3f3f46;font-size:15px;line-height:1.75;font-family:Arial,sans-serif;margin:0 0 20px;">${escapeHtml(p2)}</p>`,
+    `<p style="color:#3f3f46;font-size:15px;line-height:1.75;font-family:Arial,sans-serif;margin:0 0 20px;">${escapeHtml(p3)}</p>`,
+  ].join("");
+
+  const html = [
+    '<!DOCTYPE html><html style="color-scheme: light only;"><head><meta charset="utf-8"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"></head><body style="margin:0;">',
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f0;" bgcolor="#f4f4f0">',
+    '<tr><td align="center" style="padding:0;">',
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;display:block;">',
+
+    '<tr><td style="background:#f4f4f0;padding:32px 40px;" bgcolor="#f4f4f0">',
+    '<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="vertical-align:middle;">',
+    LOGO_SVG,
+    '</td><td style="vertical-align:middle;padding-left:10px;"><span style="color:#1a1a1a;font-size:22px;font-family:Arial,sans-serif;font-weight:700;letter-spacing:-0.5px;">noisebrief<span style="color:#00d4aa;">.</span></span></td></tr></table>',
+    `<p style="color:#888888;font-size:12px;font-family:Arial,sans-serif;margin:8px 0 0 0;letter-spacing:0.05em;">${escapeHtml(fullDate)}</p>`,
+    "</td></tr>",
+
+    '<tr><td style="background:#f4f4f0;padding:32px 40px 24px 40px;" bgcolor="#f4f4f0">',
+    '<p style="color:#1a1a1a;font-size:22px;font-weight:700;font-family:Arial,sans-serif;line-height:1.3;margin:0 0 24px;">You\'re in.</p>',
+    bodyParagraphs,
+    "</td></tr>",
+
+    '<tr><td style="background:#f4f4f0;padding:0 40px;" bgcolor="#f4f4f0"><div style="border-top:1px solid #e4e4e2;margin:8px 0 28px 0;"></div></td></tr>',
+
+    '<tr><td align="center" style="background:#f4f4f0;padding:0 40px 32px 40px;" bgcolor="#f4f4f0">',
+    `<a href="${escapeAttr(SITE_URL)}" style="background:#0a0a0f;color:#ffffff;padding:11px 24px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px;font-weight:600;text-decoration:none;display:inline-block;">Read today\'s brief →</a>`,
+    "</td></tr>",
+
+    '<tr><td style="background:#f4f4f0;padding:24px 40px;text-align:center;" bgcolor="#f4f4f0">',
+    '<p style="color:#888888;font-size:12px;font-family:Arial,sans-serif;margin:0;">You\'re receiving this because you subscribed at noisebrief.com.</p>',
+    `<p style="color:#888888;font-size:12px;font-family:Arial,sans-serif;margin:8px 0 0 0;"><a href="${escapeAttr(unsubscribeUrl)}" style="color:#888888;font-size:12px;text-decoration:underline;">Unsubscribe</a></p>`,
+    "</td></tr>",
+
+    "</table></td></tr></table></body></html>",
+  ].join("");
+
+  try {
+    const { error } = await getResendClient().emails.send({
+      from: FROM,
+      to: [to],
+      replyTo: REPLY_TO,
+      subject: "Welcome to Noisebrief.",
+      html,
+    });
+    if (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error(`Welcome email failed to=${maskEmail(to)}`, error);
+      }
+      throw error;
+    }
+  } catch (err) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(`Welcome email failed to=${maskEmail(to)}`, err);
+    }
     throw err;
   }
 }

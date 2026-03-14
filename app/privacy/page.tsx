@@ -34,8 +34,14 @@ export default function PrivacyPage() {
             What we collect
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Nothing. Noisebrief does not collect personal information, require
-            account creation, or store any user data.
+            Noisebrief collects your email address if you choose to subscribe to
+            the daily digest. This is the only personal information we collect.
+            We do not require account creation or store any other user data.
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Your email is used solely to send you the daily brief. We will never
+            sell, share, or use it for any other purpose. You can unsubscribe at
+            any time using the link in any email we send you.
           </p>
         </section>
 
@@ -77,8 +83,9 @@ export default function PrivacyPage() {
           </p>
           <ul className="mt-2 list-inside list-disc space-y-1 text-sm leading-relaxed text-muted-foreground">
             <li>Vercel — hosting</li>
-            <li>Supabase — database</li>
+            <li>Supabase — database (stores subscriber email addresses)</li>
             <li>Anthropic — AI summaries</li>
+            <li>Resend — email delivery</li>
           </ul>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             Each has their own privacy policy governing data they collect.

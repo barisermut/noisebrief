@@ -124,6 +124,11 @@
   }
 }
 
+/* Subscribe pill: expand leftward on mobile (max 16rem desktop, full width minus padding on small screens) */
+.expanded-pill {
+  max-width: min(16rem, calc(100vw - 2rem));
+}
+
 /* Section reveal: opacity-only transition (compositor-only, no Framer observers during scroll) */
 .section-reveal {
   opacity: 0;

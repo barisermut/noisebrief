@@ -8,7 +8,7 @@ const parser = new Parser({
 
 const REDDIT_HEADERS = {
   "User-Agent":
-    "Mozilla/5.0 (compatible; Noisebrief/1.0; +https://noisebrief.vercel.app)",
+    "Mozilla/5.0 (compatible; Noisebrief/1.0; +https://www.noisebrief.com)",
   Accept: "application/rss+xml, application/xml, text/xml, */*",
   "Accept-Language": "en-US,en;q=0.9",
   "Cache-Control": "no-cache",

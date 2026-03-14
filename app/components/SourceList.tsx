@@ -104,10 +104,22 @@ interface SourceListProps {
   summaryComplete?: boolean;
   /** When true, source items render visible immediately (no stagger animation). */
   isHistorical?: boolean;
+  /** When provided, dialog open state is controlled by parent (e.g. to hide floating CTA). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function SourceList({ sources, briefDate, summaryComplete = false, isHistorical = false }: SourceListProps) {
-  const [open, setOpen] = useState(false);
+export function SourceList({ sources, briefDate, summaryComplete = false, isHistorical = false, open: controlledOpen, onOpenChange }: SourceListProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = useCallback(
+    (value: boolean) => {
+      if (onOpenChange) onOpenChange(value);
+      if (!isControlled) setInternalOpen(value);
+    },
+    [onOpenChange, isControlled]
+  );
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 

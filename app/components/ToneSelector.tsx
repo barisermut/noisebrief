@@ -23,7 +23,7 @@ export function ToneSelector({
   loading,
 }: ToneSelectorProps) {
   return (
-    <div className="flex flex-row gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:grid sm:grid-cols-6 sm:overflow-visible sm:mx-0 sm:px-0">
+    <div className="flex flex-row gap-2 overflow-x-auto pb-3 sm:pb-0 -mx-4 px-4 sm:grid sm:grid-cols-6 sm:overflow-visible sm:mx-0 sm:px-0">
       {TONES.map(({ tone, label, emoji }) => {
         const isSelected = selected === tone;
         return (

@@ -13,6 +13,7 @@ import { GeneratedPost } from "./GeneratedPost";
 import { PostCardSkeleton } from "./PostCardSkeleton";
 import { BriefDatePicker } from "./BriefDatePicker";
 import { ThemeToggle } from "./ThemeToggle";
+import { SubscribePill } from "./SubscribePill";
 import { useBrief } from "./BriefProvider";
 
 function formatBriefDateLabel(dateStr: string): string {
@@ -68,6 +69,9 @@ export function NoisebriefContent() {
 
   const [scrolled, setScrolled] = useState(false);
   const [toneSectionInView, setToneSectionInView] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [subscribeExpanded, setSubscribeExpanded] = useState(false);
   const toneSectionRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -88,7 +92,7 @@ export function NoisebriefContent() {
   }, [brief?.summary]);
 
   const briefLoaded = !loading && !error && !!brief?.summary;
-  const showFloatingCta = briefLoaded && !toneSectionInView;
+  const showFloatingCta = briefLoaded && !toneSectionInView && !datePickerOpen && !sourcesOpen;
 
   return (
     <div className="flex min-h-full min-w-0 flex-col">
@@ -96,8 +100,10 @@ export function NoisebriefContent() {
         <header
           className={`sticky top-0 z-40 w-full bg-background/95 dark:bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-black/8 dark:border-white/8 transition-shadow duration-200 ${scrolled ? "shadow-[0_2px_16px_rgba(0,0,0,0.35)]" : ""}`}
         >
-          <div className="max-w-2xl mx-auto flex items-center justify-between gap-2 px-4 pt-3 pb-3">
-            <div className="min-w-0">
+          <div className="relative max-w-2xl mx-auto flex items-center justify-between gap-2 px-4 pt-3 pb-3 min-h-16 overflow-hidden">
+            <div
+              className={`min-w-0 transition-opacity duration-300 ${subscribeExpanded ? "absolute left-4 top-3 z-0 opacity-0 pointer-events-none sm:static sm:opacity-100 sm:pointer-events-auto sm:z-auto" : ""}`}
+            >
               <div className="flex items-center gap-2 sm:gap-3">
                 <svg
                   aria-hidden="true"
@@ -140,15 +146,16 @@ export function NoisebriefContent() {
                   className="font-heading text-2xl font-bold tracking-tight text-[#1a1a1a] dark:text-white sm:text-3xl md:text-4xl"
                   style={{ fontFamily: "var(--font-heading)" }}
                 >
-                  Noisebrief
+                  noisebrief<span style={{ color: "#00d4aa" }}>.</span>
                 </h1>
               </div>
               <p className="mt-1 break-words text-sm text-foreground/40">
                 Today&apos;s tech noise. Briefly.
               </p>
             </div>
-            <div className="shrink-0">
-              <ThemeToggle />
+            <div className={`flex flex-col items-end gap-1 ${subscribeExpanded ? "flex-1 min-w-0" : "shrink-0"}`}>
+              <SubscribePill onExpandedChange={setSubscribeExpanded} />
+              <p className="text-sm text-foreground/40">One email. Every morning.</p>
             </div>
           </div>
         </header>
@@ -173,6 +180,8 @@ export function NoisebriefContent() {
                 onSelectDate={navigateToDate}
                 dates={availableDates}
                 loadingDates={availableDatesLoading}
+                open={datePickerOpen}
+                onOpenChange={setDatePickerOpen}
               />
             </>
           )}
@@ -246,6 +255,8 @@ export function NoisebriefContent() {
             briefDate={brief.date}
             summaryComplete={summaryComplete}
             isHistorical={isHistorical}
+            open={sourcesOpen}
+            onOpenChange={setSourcesOpen}
           />
         </section>
       )}
@@ -314,6 +325,8 @@ export function NoisebriefContent() {
         >
           Privacy Policy
         </Link>
+        <span className="select-none mx-1.5" aria-hidden>·</span>
+        <ThemeToggle />
       </footer>
     </div>
   );
