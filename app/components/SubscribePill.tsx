@@ -100,6 +100,11 @@ export function SubscribePill({ className, onExpandedChange }: { className?: str
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
             type="button"
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              flushSync(() => setState("expanded"));
+              inputRef.current?.focus();
+            }}
             onClick={() => {
               flushSync(() => setState("expanded"));
               inputRef.current?.focus();
@@ -129,6 +134,9 @@ export function SubscribePill({ className, onExpandedChange }: { className?: str
               onKeyDown={e => e.key === "Enter" && submit()}
               placeholder="your@email.com"
               disabled={state === "loading"}
+              autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-foreground/30 min-w-0"
             />
             <button
