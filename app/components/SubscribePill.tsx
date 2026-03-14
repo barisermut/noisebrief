@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { flushSync } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, ArrowRight, CheckCircle, Loader2 } from "lucide-react";
 
@@ -83,6 +82,13 @@ export function SubscribePill({ className, onExpandedChange }: { className?: str
   const isExpandedOrLoading = state === "expanded" || state === "loading";
   const widthClass = isExpandedOrLoading ? "w-full max-w-[65vw] sm:max-w-[360px]" : "w-auto";
 
+  const expandAndFocus = useCallback(() => {
+    setState("expanded");
+    inputRef.current?.focus();
+  }, []);
+
+  const isIdle = state === "idle";
+
   return (
     <motion.div
       ref={pillRef}
@@ -91,8 +97,39 @@ export function SubscribePill({ className, onExpandedChange }: { className?: str
       className={`flex items-center h-9 rounded-full border bg-background overflow-hidden ${widthClass} ${borderColor} ${className ?? ""}`}
       style={{ originX: 1 }}
     >
+      {/* Input row: always in DOM (hidden when idle) so focus() in touch handler runs on existing element — required for iOS keyboard */}
+      <div
+        className={`flex items-center w-full px-3 gap-2 ${isIdle ? "absolute opacity-0 w-0 h-0 overflow-hidden pointer-events-none" : ""}`}
+        aria-hidden={isIdle}
+      >
+        <Mail className="h-3.5 w-3.5 shrink-0 text-foreground/40" />
+        <input
+          ref={inputRef}
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && submit()}
+          placeholder="your@email.com"
+          disabled={state === "loading"}
+          autoComplete="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          className="flex-1 bg-transparent text-sm outline-none placeholder:text-foreground/30 min-w-0"
+        />
+        <button
+          type="button"
+          onClick={submit}
+          disabled={!isValidEmail || state === "loading"}
+          className="shrink-0 h-6 w-6 rounded-full bg-teal-500 hover:bg-teal-400 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-opacity"
+        >
+          {state === "loading"
+            ? <Loader2 className="h-3.5 w-3.5 text-white animate-spin" />
+            : <ArrowRight className="h-3.5 w-3.5 text-white" />}
+        </button>
+      </div>
+
       <AnimatePresence mode="wait" initial={false}>
-        {state === "idle" && (
+        {isIdle && (
           <motion.button
             key="idle"
             initial={{ opacity: 0 }}
@@ -102,54 +139,14 @@ export function SubscribePill({ className, onExpandedChange }: { className?: str
             type="button"
             onTouchEnd={(e) => {
               e.preventDefault();
-              flushSync(() => setState("expanded"));
-              inputRef.current?.focus();
+              expandAndFocus();
             }}
-            onClick={() => {
-              flushSync(() => setState("expanded"));
-              inputRef.current?.focus();
-            }}
+            onClick={expandAndFocus}
             className="flex h-full w-full items-center justify-center gap-1.5 px-3 text-sm text-foreground/60 whitespace-nowrap cursor-pointer"
           >
             <Mail className="h-3.5 w-3.5 shrink-0" />
             Subscribe
           </motion.button>
-        )}
-
-        {(state === "expanded" || state === "loading") && (
-          <motion.div
-            key="expanded"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="flex items-center w-full px-3 gap-2"
-          >
-            <Mail className="h-3.5 w-3.5 shrink-0 text-foreground/40" />
-            <input
-              ref={inputRef}
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && submit()}
-              placeholder="your@email.com"
-              disabled={state === "loading"}
-              autoComplete="email"
-              autoCapitalize="none"
-              autoCorrect="off"
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-foreground/30 min-w-0"
-            />
-            <button
-              type="button"
-              onClick={submit}
-              disabled={!isValidEmail || state === "loading"}
-              className="shrink-0 h-6 w-6 rounded-full bg-teal-500 hover:bg-teal-400 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-opacity"
-            >
-              {state === "loading"
-                ? <Loader2 className="h-3.5 w-3.5 text-white animate-spin" />
-                : <ArrowRight className="h-3.5 w-3.5 text-white" />}
-            </button>
-          </motion.div>
         )}
 
         {state === "success" && (
