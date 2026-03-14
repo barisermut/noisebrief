@@ -21,19 +21,25 @@ export const metadata: Metadata = {
   description:
     "Daily one-pager: what happened today in tech? AI-summarized from Hacker News, TechCrunch, The Verge, Wired, and Reddit.",
   openGraph: {
-    title: "Noisebrief — Today's tech noise. Briefly.",
+    title: "Noisebrief — Today's Tech News, Briefly",
     description:
       "Daily one-pager: what happened today in tech? AI-summarized from Hacker News, TechCrunch, The Verge, Wired, and Reddit.",
     url: siteUrl,
     siteName: "Noisebrief",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [
+      {
+        url: `${siteUrl}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "Noisebrief — Today's tech noise. Briefly.",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Noisebrief — Today's tech noise. Briefly.",
-    description:
-      "Daily one-pager: what happened today in tech? AI-summarized from Hacker News, TechCrunch, The Verge, Wired, and Reddit.",
-    images: ["/og-image.png"],
+    title: "Noisebrief — Today's Tech News, Briefly",
+    description: "Daily AI-generated tech news digest.",
+    images: [`${siteUrl}/og-image.png`],
   },
   // Explicit static files from /public so every browser finds the icon (no file-convention magic).
   icons: {
