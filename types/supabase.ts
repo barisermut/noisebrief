@@ -42,6 +42,30 @@ export interface Database {
         };
         Relationships: [];
       };
+      email_subscribers: {
+        Row: {
+          id: string;
+          email: string;
+          subscribed_at: string;
+          unsubscribe_token: string;
+          unsubscribed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          subscribed_at?: string;
+          unsubscribe_token: string;
+          unsubscribed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          subscribed_at?: string;
+          unsubscribe_token?: string;
+          unsubscribed_at?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
