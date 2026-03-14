@@ -32,10 +32,13 @@ export function SubscribePill({ className, onExpandedChange }: { className?: str
     return () => document.removeEventListener("mousedown", handler);
   }, [state]);
 
-  // Auto-focus input when expanded
+  // Auto-focus input when expanded — shorter delay on mobile so keyboard opens without re-tap
   useEffect(() => {
     if (state === "expanded") {
-      setTimeout(() => inputRef.current?.focus(), 300);
+      const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
+      const delay = isMobile ? 50 : 300;
+      const t = setTimeout(() => inputRef.current?.focus(), delay);
+      return () => clearTimeout(t);
     }
   }, [state]);
 
@@ -77,7 +80,7 @@ export function SubscribePill({ className, onExpandedChange }: { className?: str
       : "border-black/15 dark:border-white/15";
 
   const isExpandedOrLoading = state === "expanded" || state === "loading";
-  const widthClass = isExpandedOrLoading ? "w-full max-w-[65vw] sm:max-w-none" : "w-auto";
+  const widthClass = isExpandedOrLoading ? "w-full max-w-[65vw] sm:max-w-[360px]" : "w-auto";
 
   return (
     <motion.div
@@ -97,7 +100,7 @@ export function SubscribePill({ className, onExpandedChange }: { className?: str
             transition={{ duration: 0.15 }}
             type="button"
             onClick={() => setState("expanded")}
-            className="flex items-center gap-1.5 px-3 text-sm text-foreground/60 whitespace-nowrap cursor-pointer"
+            className="flex h-full w-full items-center justify-center gap-1.5 px-3 text-sm text-foreground/60 whitespace-nowrap cursor-pointer"
           >
             <Mail className="h-3.5 w-3.5 shrink-0" />
             Subscribe
