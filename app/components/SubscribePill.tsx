@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, ArrowRight, CheckCircle, Loader2 } from "lucide-react";
 
@@ -99,7 +100,10 @@ export function SubscribePill({ className, onExpandedChange }: { className?: str
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
             type="button"
-            onClick={() => setState("expanded")}
+            onClick={() => {
+              flushSync(() => setState("expanded"));
+              inputRef.current?.focus();
+            }}
             className="flex h-full w-full items-center justify-center gap-1.5 px-3 text-sm text-foreground/60 whitespace-nowrap cursor-pointer"
           >
             <Mail className="h-3.5 w-3.5 shrink-0" />
