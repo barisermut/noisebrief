@@ -114,7 +114,8 @@ export function SubscribePill({ className, onExpandedChange }: { className?: str
           autoComplete="email"
           autoCapitalize="none"
           autoCorrect="off"
-          className="flex-1 bg-transparent text-sm outline-none placeholder:text-foreground/30 min-w-0"
+          className="flex-1 bg-transparent text-base outline-none placeholder:text-foreground/30 min-w-0"
+          style={{ fontSize: "16px" }}
         />
         <button
           type="button"
