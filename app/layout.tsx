@@ -26,20 +26,11 @@ export const metadata: Metadata = {
       "Daily one-pager: what happened today in tech? AI-summarized from Hacker News, TechCrunch, The Verge, Wired, and Reddit.",
     url: siteUrl,
     siteName: "Noisebrief",
-    images: [
-      {
-        url: `${siteUrl}/og-image.png`,
-        width: 1200,
-        height: 630,
-        alt: "Noisebrief — Today's tech noise. Briefly.",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Noisebrief — Today's Tech News, Briefly",
     description: "Daily AI-generated tech news digest.",
-    images: [`${siteUrl}/og-image.png`],
   },
   // Explicit static files from /public so every browser finds the icon (no file-convention magic).
   icons: {
@@ -58,7 +49,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
+      <body className="min-h-full min-w-0 font-sans antialiased noise-overlay bg-background text-foreground">
         <script dangerouslySetInnerHTML={{ __html: `
   (function() {
     try {
@@ -73,11 +64,6 @@ export default function RootLayout({
     } catch(e) {}
   })()
 ` }} />
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-      </head>
-      <body className="min-h-full min-w-0 font-sans antialiased noise-overlay bg-background text-foreground">
         <ThemeProvider>
           <BriefProvider>
             {children}
