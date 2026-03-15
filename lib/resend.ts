@@ -1,25 +1,11 @@
-import { Resend } from "resend";
 import type { BriefParagraph } from "@/types/brief";
 import { maskEmail } from "@/lib/maskEmail";
-
-function getResendClient() {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) throw new Error("Missing RESEND_API_KEY");
-  return new Resend(key);
-}
+import { getResendClient, escapeHtml } from "@/lib/email-utils";
 
 const FROM = "Noisebrief <briefs@noisebrief.com>";
 const REPLY_TO = "briefs@noisebrief.com";
-const UNSUBSCRIBE_BASE = "https://www.noisebrief.com/unsubscribe";
+const UNSUBSCRIBE_BASE = "https://www.noisebrief.com/api/unsubscribe";
 const SITE_URL = "https://www.noisebrief.com";
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
 
 function escapeAttr(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");

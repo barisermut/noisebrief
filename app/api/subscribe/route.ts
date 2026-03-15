@@ -52,9 +52,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (selectError) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Subscribe select error", selectError);
-      }
+      console.error("Subscribe select error", selectError);
       return NextResponse.json(
         { error: "server_error" },
         { status: 500 }
@@ -75,13 +73,16 @@ export async function POST(request: NextRequest) {
         .eq("id", row.id);
 
       if (updateError) {
-        if (process.env.NODE_ENV === "development") {
-          console.error("Subscribe update error", updateError);
-        }
+        console.error("Subscribe update error", updateError);
         return NextResponse.json(
           { error: "server_error" },
           { status: 500 }
         );
+      }
+      try {
+        await sendWelcomeEmail(email, newToken);
+      } catch (err) {
+        console.error("Welcome email failed after re-subscribe", err);
       }
       return NextResponse.json({ message: "subscribed" });
     }
@@ -93,9 +94,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (insertError) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Subscribe insert error", insertError);
-      }
+      console.error("Subscribe insert error", insertError);
       return NextResponse.json(
         { error: "server_error" },
         { status: 500 }
@@ -105,15 +104,11 @@ export async function POST(request: NextRequest) {
     try {
       await sendWelcomeEmail(email, unsubscribeToken);
     } catch (err) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Welcome email failed after subscribe", err);
-      }
+      console.error("Welcome email failed after subscribe", err);
     }
     return NextResponse.json({ message: "subscribed" });
-  } catch {
-    if (process.env.NODE_ENV === "development") {
-      console.error("Subscribe unexpected error");
-    }
+  } catch (err) {
+    console.error("Subscribe unexpected error", err);
     return NextResponse.json(
       { error: "server_error" },
       { status: 500 }

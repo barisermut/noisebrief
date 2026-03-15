@@ -1,10 +1,13 @@
+import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { fetchAllSources } from "@/lib/fetchAllSources";
 import { generateDailySummary } from "@/lib/claude";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { runDigest } from "@/lib/runDigest";
 import type { Source } from "@/types";
 
-export const maxDuration = 60;
+// Brief + digest in one run; digest can take time with many subscribers.
+export const maxDuration = 120;
 
 /** Extract URLs from yesterday's brief sources for deduplication. */
 async function getYesterdayBriefUrls(): Promise<Set<string>> {
@@ -26,9 +29,14 @@ async function getYesterdayBriefUrls(): Promise<Set<string>> {
 
 export async function GET(request: Request) {
   // Vercel Cron: send Authorization: Bearer <CRON_SECRET>; validate before any work.
-  const cronSecret = request.headers.get("authorization");
+  const cronSecret = request.headers.get("authorization") ?? "";
   const expected = `Bearer ${process.env.CRON_SECRET ?? ""}`;
-  if (cronSecret !== expected || !process.env.CRON_SECRET) {
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const a = Buffer.from(cronSecret);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -36,9 +44,7 @@ export async function GET(request: Request) {
     // Fetch sources and yesterday's URLs in parallel — they're independent.
     const [sourcesResult, yesterdayUrlsResult] = await Promise.all([
       fetchAllSources().catch((err) => {
-        if (process.env.NODE_ENV === "development") {
-          console.error("Cron error after RSS fetch");
-        }
+        console.error("Cron error after RSS fetch", err);
         throw err;
       }),
       getYesterdayBriefUrls().catch(() => new Set<string>()),
@@ -74,10 +80,8 @@ export async function GET(request: Request) {
       summary = result.summary;
       paragraphs = result.paragraphs;
       usedSources = result.usedSources;
-    } catch {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Cron error after Claude API call");
-      }
+    } catch (err) {
+      console.error("Cron error after Claude API call", err);
       throw new Error("Claude API failed");
     }
 
@@ -98,33 +102,34 @@ export async function GET(request: Request) {
         { onConflict: "date" }
       );
       supabaseError = result.error;
-    } catch {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Cron error after Supabase insert");
-      }
+    } catch (err) {
+      console.error("Cron error after Supabase insert", err);
       throw new Error("Supabase insert failed");
     }
 
     if (supabaseError) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Supabase upsert error");
-      }
+      console.error("Supabase upsert error", supabaseError);
       return NextResponse.json(
         { error: "Failed to store brief" },
         { status: 500 }
       );
     }
 
+    // Run digest immediately after brief so order is guaranteed (Vercel Hobby cron window).
+    const digestResult = await runDigest();
+
     return NextResponse.json({
       ok: true,
       date: today,
       summaryLength: summary.length,
       sourcesCount: usedSources.length,
+      digest:
+        digestResult.ok
+          ? { sent: digestResult.sent, failed: digestResult.failed }
+          : { message: digestResult.reason },
     });
-  } catch {
-    if (process.env.NODE_ENV === "development") {
-      console.error("Cron error");
-    }
+  } catch (err) {
+    console.error("Cron error", err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

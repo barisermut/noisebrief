@@ -26,3 +26,19 @@ create policy "Allow public read"
 create policy "Service role only insert/update"
   on daily_briefs for all
   using (auth.role() = 'service_role');
+
+-- email_subscribers table — stores digest subscribers.
+
+create table if not exists email_subscribers (
+  id uuid default gen_random_uuid() primary key,
+  email text not null unique,
+  subscribed_at timestamp with time zone default now(),
+  unsubscribe_token text not null unique,
+  unsubscribed_at timestamp with time zone
+);
+
+alter table email_subscribers enable row level security;
+
+create policy "Service role only"
+  on email_subscribers for all
+  using (auth.role() = 'service_role');

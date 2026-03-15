@@ -11,7 +11,7 @@ Today's tech noise. Briefly.
 - Fetches RSS from Hacker News, TechCrunch, The Verge, Wired, and key Reddit subs — once per day via cron.
 - Summarizes the lot with Claude into a title and 2–3 paragraphs, deduped against yesterday.
 - Lets you rewrite the brief in six tones (Quirky, Formal, Cheesy, Savage, Inspirational, TL;DR) and copy or share.
-- Sends a daily email digest at 8:30 AM UTC to subscribers, with a welcome email on first signup.
+- Sends a daily email digest to subscribers immediately after the 8 AM UTC cron job, with a welcome email on first signup.
 
 ---
 
@@ -25,14 +25,14 @@ Today's tech noise. Briefly.
 | Supabase        | Postgres for briefs, subscribers, cache      |
 | Anthropic Claude API | Daily summary (Sonnet), tone posts (Haiku) |
 | Resend          | Welcome and digest emails                    |
-| Vercel          | Hosting and cron (daily 8AM, digest 8:30AM)  |
+| Vercel          | Hosting and cron (daily 8AM UTC)             |
 | Upstash Redis   | Rate limiting (subscribe, post, favicon)      |
 
 ---
 
 ## How it works
 
-A Vercel cron job runs at 8 AM UTC: it fetches all RSS sources in parallel, dedupes against yesterday’s brief, sends the batch to Claude for one summary call, and stores the result in Supabase. The site serves today’s (or latest) brief via API; users can browse by date, generate tone variants (cached in DB), and subscribe for the daily digest. The digest cron runs at 8:30 AM UTC and emails all active subscribers using the same brief; new subscribers get a welcome email immediately.
+A Vercel cron job runs at 8 AM UTC: it fetches all RSS sources in parallel, dedupes against yesterday’s brief, sends the batch to Claude for one summary call, and stores the result in Supabase. The site serves today’s (or latest) brief via API; users can browse by date, generate tone variants (cached in DB), and subscribe for the daily digest. Immediately after, the same cron job sends the digest email to all active subscribers. New subscribers get a welcome email immediately.
 
 ---
 

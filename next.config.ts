@@ -8,9 +8,10 @@ const securityHeaders = [
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
   },
-  // ACTION REQUIRED: Add Content-Security-Policy after testing — a restrictive
-  // CSP can break inline scripts (e.g. theme init, JSON-LD). Define and test
-  // a policy manually before enabling.
+  {
+    key: "Content-Security-Policy",
+    value: "default-src 'self'; img-src 'self' https: data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https:;",
+  },
 ];
 
 const nextConfig: NextConfig = {

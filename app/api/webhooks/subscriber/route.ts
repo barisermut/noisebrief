@@ -1,6 +1,7 @@
+import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
 import { maskEmail } from "@/lib/maskEmail";
+import { getResendClient, escapeHtml } from "@/lib/email-utils";
 
 const FROM = "Noisebrief <briefs@noisebrief.com>";
 
@@ -10,25 +11,16 @@ type WebhookPayload = {
   record?: { email?: string; subscribed_at?: string };
 };
 
-function getResendClient(): Resend {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) throw new Error("Missing RESEND_API_KEY");
-  return new Resend(key);
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
 export async function POST(request: NextRequest) {
   try {
-    const secret = request.headers.get("x-webhook-secret");
+    const secret = request.headers.get("x-webhook-secret") ?? "";
     const expected = process.env.WEBHOOK_SECRET ?? "";
-    if (!secret || secret !== expected) {
+    if (!process.env.WEBHOOK_SECRET) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const secretA = Buffer.from(secret);
+    const secretB = Buffer.from(expected);
+    if (secretA.length !== secretB.length || !crypto.timingSafeEqual(secretA, secretB)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -45,9 +37,7 @@ export async function POST(request: NextRequest) {
 
     const ownerEmail = process.env.OWNER_EMAIL;
     if (!ownerEmail) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Webhook subscriber: OWNER_EMAIL not set");
-      }
+      console.error("Webhook subscriber: OWNER_EMAIL not set");
       return NextResponse.json({ error: "server_error" }, { status: 500 });
     }
 
@@ -73,17 +63,13 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Webhook subscriber send error", error);
-      }
+      console.error("Webhook subscriber send error", error);
       return NextResponse.json({ error: "server_error" }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("Webhook subscriber error", err);
-    }
+    console.error("Webhook subscriber error", err);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

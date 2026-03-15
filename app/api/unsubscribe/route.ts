@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { unsubscribeRatelimiter, getClientIp } from "@/lib/ratelimit";
 
 function htmlPage(title: string, message: string, showBackLink: boolean): NextResponse {
   const html = `<!DOCTYPE html>
@@ -75,6 +76,14 @@ function htmlPage(title: string, message: string, showBackLink: boolean): NextRe
 }
 
 export async function GET(request: NextRequest) {
+  if (unsubscribeRatelimiter) {
+    const ip = getClientIp(request);
+    const { success } = await unsubscribeRatelimiter.limit(ip);
+    if (!success) {
+      return htmlPage("Too many requests", "Please wait a moment and try again.", false);
+    }
+  }
+
   const token = request.nextUrl.searchParams.get("token");
   if (!token || !token.trim()) {
     return htmlPage("Invalid link", "This unsubscribe link is invalid or has already been used.", false);
@@ -88,7 +97,12 @@ export async function GET(request: NextRequest) {
       .eq("unsubscribe_token", token.trim())
       .maybeSingle();
 
-    if (selectError || !row) {
+    if (selectError) {
+      console.error("Unsubscribe select error", selectError);
+      return htmlPage("Something went wrong", "Please try again or contact us at briefs@noisebrief.com.", false);
+    }
+
+    if (!row) {
       return htmlPage("Invalid link", "This unsubscribe link is invalid or has already been used.", false);
     }
 
@@ -102,11 +116,13 @@ export async function GET(request: NextRequest) {
       .eq("id", row.id);
 
     if (updateError) {
+      console.error("Unsubscribe update error", updateError);
       return htmlPage("Something went wrong", "Please try again or contact us at briefs@noisebrief.com.", false);
     }
 
     return htmlPage("You're unsubscribed.", "You won't receive any more emails from Noisebrief. We're sorry to see you go.", true);
-  } catch {
+  } catch (err) {
+    console.error("Unsubscribe unexpected error", err);
     return htmlPage("Something went wrong", "Please try again or contact us at briefs@noisebrief.com.", false);
   }
 }

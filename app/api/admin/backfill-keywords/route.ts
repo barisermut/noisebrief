@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import {
@@ -11,9 +12,14 @@ import type { Json } from "@/types/supabase";
 const BACKFILL_RATE_LIMIT_MS = 1000;
 
 export async function POST(request: Request) {
-  const auth = request.headers.get("authorization");
+  const auth = request.headers.get("authorization") ?? "";
   const expected = `Bearer ${process.env.CRON_SECRET ?? ""}`;
-  if (auth !== expected || !process.env.CRON_SECRET) {
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const a = Buffer.from(auth);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -1,12 +1,15 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-// Gracefully handle missing env vars (returns null in dev if not configured)
+const redisConfigured =
+  !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN;
+
+if (!redisConfigured) {
+  console.warn("Rate limiting disabled: UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN is missing");
+}
+
 function createRatelimiter() {
-  if (
-    !process.env.UPSTASH_REDIS_REST_URL ||
-    !process.env.UPSTASH_REDIS_REST_TOKEN
-  ) {
+  if (!redisConfigured) {
     return null;
   }
   const redis = new Redis({
@@ -21,10 +24,7 @@ function createRatelimiter() {
 }
 
 function createSubscribeRatelimiter() {
-  if (
-    !process.env.UPSTASH_REDIS_REST_URL ||
-    !process.env.UPSTASH_REDIS_REST_TOKEN
-  ) {
+  if (!redisConfigured) {
     return null;
   }
   const redis = new Redis({
@@ -38,8 +38,24 @@ function createSubscribeRatelimiter() {
   });
 }
 
+function createUnsubscribeRatelimiter() {
+  if (!redisConfigured) {
+    return null;
+  }
+  const redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  });
+  return new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(50, "1 m"),
+    analytics: false,
+  });
+}
+
 export const ratelimiter = createRatelimiter();
 export const subscribeRatelimiter = createSubscribeRatelimiter();
+export const unsubscribeRatelimiter = createUnsubscribeRatelimiter();
 
 export function getClientIp(request: Request): string {
   return (
