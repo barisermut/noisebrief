@@ -43,6 +43,10 @@ export default function PrivacyPage() {
             sell, share, or use it for any other purpose. You can unsubscribe at
             any time using the link in any email we send you.
           </p>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            We use IP addresses for rate limiting (e.g. subscribe, unsubscribe)
+            to prevent abuse. We do not use them to identify or profile you.
+          </p>
         </section>
 
         <section className="mt-8">
@@ -54,8 +58,9 @@ export default function PrivacyPage() {
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             Our hosting provider (Vercel) automatically records standard server
-            logs including IP addresses and browser types. We do not access or
-            use this data to identify users.
+            logs including IP addresses and browser types. We also keep
+            operational and error logs (e.g. masked email in send-failure
+            messages) only to fix technical issues.
           </p>
         </section>
 
@@ -86,6 +91,7 @@ export default function PrivacyPage() {
             <li>Supabase — database (stores subscriber email addresses)</li>
             <li>Anthropic — AI summaries</li>
             <li>Resend — email delivery</li>
+            <li>Upstash — rate limiting</li>
           </ul>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             Each has their own privacy policy governing data they collect.
