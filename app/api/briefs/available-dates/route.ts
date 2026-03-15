@@ -28,7 +28,11 @@ export async function GET() {
       .map((row: { date: string }) => row.date)
       .filter((d): d is string => typeof d === "string" && d.length > 0);
 
-    return NextResponse.json({ dates });
+    return NextResponse.json({ dates }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      },
+    });
   } catch {
     if (process.env.NODE_ENV === "development") {
       console.error("Available dates error");
