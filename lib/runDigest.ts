@@ -53,8 +53,11 @@ export async function runDigest(): Promise<DigestResult> {
   let sent = 0;
   let failed = 0;
 
-  const BATCH_SIZE = 10;
+  // Resend limit: 2 requests per second. Send in batches of 2 with 1s gap.
+  const BATCH_SIZE = 2;
+  const MS_PER_BATCH = 1000;
   for (let i = 0; i < subData.length; i += BATCH_SIZE) {
+    if (i > 0) await new Promise((r) => setTimeout(r, MS_PER_BATCH));
     const batch = subData.slice(i, i + BATCH_SIZE);
     const results = await Promise.allSettled(
       batch.map((sub) => sendDigestEmail(sub.email, brief, sub.unsubscribe_token))
