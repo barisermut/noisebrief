@@ -39,7 +39,8 @@ export async function runDigest(): Promise<DigestResult> {
   const { data: subData, error: subError } = await admin
     .from("email_subscribers")
     .select("email, unsubscribe_token")
-    .is("unsubscribed_at", null);
+    .is("unsubscribed_at", null)
+    .order("subscribed_at", { ascending: true });
 
   if (subError) {
     return { ok: false, reason: "subscriber_fetch_error" };

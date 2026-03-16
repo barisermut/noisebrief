@@ -118,21 +118,20 @@ export async function sendDigestEmail(
       html,
     });
     if (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error(
-          `Digest send failed to=${maskEmail(to)} date=${brief.date}`,
-          error
-        );
-      }
+      // Log in prod too so cron failures are visible in Vercel logs (Hobby keeps 1h).
+      console.error(
+        `Digest send failed to=${maskEmail(to)} date=${brief.date}`,
+        typeof error === "object" && error !== null && "message" in error
+          ? (error as { message?: string }).message
+          : String(error)
+      );
       throw error;
     }
   } catch (err) {
-    if (process.env.NODE_ENV === "development") {
-      console.error(
-        `Digest send failed to=${maskEmail(to)} date=${brief.date}`,
-        err
-      );
-    }
+    console.error(
+      `Digest send failed to=${maskEmail(to)} date=${brief.date}`,
+      err instanceof Error ? err.message : String(err)
+    );
     throw err;
   }
 }
