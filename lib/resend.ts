@@ -156,7 +156,7 @@ export async function sendWelcomeEmail(
 
   const p1 = "Welcome to Noisebrief, your daily one-pager on what's happening in tech. No noise, no fluff. Just the signal that matters.";
   const p2 = "Every day at 8:30 AM UTC, we fetch the latest from Hacker News, TechCrunch, The Verge, Wired, and the best corners of Reddit, summarize it with AI, and send it straight to your inbox.";
-  const p3 = "Your first brief arrives tomorrow morning. Until then, you can read today's brief and browse past ones on the site.";
+  const p3 = "Until then, you can read today's brief and browse past ones on the site.";
   const bodyParagraphs = [
     `<p style="color:#3f3f46;font-size:15px;line-height:1.75;font-family:Arial,sans-serif;margin:0 0 20px;">${escapeHtml(p1)}</p>`,
     `<p style="color:#3f3f46;font-size:15px;line-height:1.75;font-family:Arial,sans-serif;margin:0 0 20px;">${escapeHtml(p2)}</p>`,
