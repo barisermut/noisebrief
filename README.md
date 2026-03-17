@@ -1,4 +1,7 @@
-# noisebrief.
+<p>
+  <img src="public/logo.png" alt="Noisebrief" width="40" height="40" style="vertical-align: middle; margin-right: 10px;">
+  <strong style="font-size: 1.5em;">noisebrief<span style="color:#00d4aa">.</span></strong>
+</p>
 
 Today's tech noise. Briefly.
 
