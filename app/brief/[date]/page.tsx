@@ -29,7 +29,7 @@ export async function generateMetadata({
   const { date } = await params;
   if (!date || !isValidDateString(date)) {
     return {
-      title: "Brief not found — Noisebrief",
+      title: "Brief not found | Noisebrief",
       description: "Daily AI-generated tech news digest.",
     };
   }
@@ -41,15 +41,15 @@ export async function generateMetadata({
 
   if (!brief) {
     return {
-      title: `Brief — Noisebrief | ${formattedDate}`,
+      title: `Brief · ${formattedDate} | Noisebrief`,
       description: "Daily AI-generated tech news digest.",
-      openGraph: { url, title: `Brief — Noisebrief | ${formattedDate}`, description: "Daily AI-generated tech news digest." },
-      twitter: { card: "summary_large_image", title: `Brief — Noisebrief | ${formattedDate}`, description: "Daily AI-generated tech news digest." },
+      openGraph: { url, title: `Brief · ${formattedDate} | Noisebrief`, description: "Daily AI-generated tech news digest." },
+      twitter: { card: "summary_large_image", title: `Brief · ${formattedDate} | Noisebrief`, description: "Daily AI-generated tech news digest." },
     };
   }
 
   const title = brief.title?.trim() || "Tech brief";
-  const metaTitle = `${title} — Noisebrief | ${formattedDate}`;
+  const metaTitle = `${title} · ${formattedDate} | Noisebrief`;
   const description = truncateToFirstSentence(brief.summary, 160);
 
   return {

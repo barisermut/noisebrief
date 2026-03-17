@@ -38,7 +38,7 @@ export function GeneratedPost({ post }: GeneratedPostProps) {
       <div className="mb-3 flex items-center gap-2">
         <FileText className="h-4 w-4 shrink-0 text-teal-400" />
         <span className="text-xs text-[#6b6b6b] dark:text-zinc-500">
-          Your recap — ready to copy &amp; share anywhere
+          Your recap: ready to copy &amp; share anywhere
         </span>
       </div>
       <div className="mb-4 min-w-0 overflow-hidden whitespace-pre-wrap break-words rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm leading-relaxed text-[#1a1a1a] dark:border-white/5 dark:bg-black/20 dark:text-zinc-300 sm:p-4">

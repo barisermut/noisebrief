@@ -17,11 +17,11 @@ export const viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Noisebrief — Today's tech noise. Briefly.",
+  title: "Noisebrief | Today's tech noise. Briefly.",
   description:
     "Daily one-pager: what happened today in tech? AI-summarized from Hacker News, TechCrunch, The Verge, Wired, and Reddit.",
   openGraph: {
-    title: "Noisebrief — Today's Tech News, Briefly",
+    title: "Noisebrief | Today's Tech News, Briefly",
     description:
       "Daily one-pager: what happened today in tech? AI-summarized from Hacker News, TechCrunch, The Verge, Wired, and Reddit.",
     url: siteUrl,
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Noisebrief — Today's Tech News, Briefly",
+    title: "Noisebrief | Today's Tech News, Briefly",
     description: "Daily AI-generated tech news digest.",
   },
   // Explicit static files from /public so every browser finds the icon (no file-convention magic).

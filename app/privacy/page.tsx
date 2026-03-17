@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Noisebrief",
+  title: "Privacy Policy | Noisebrief",
   description:
     "Noisebrief privacy policy. We don't collect personal data, use cookies, or track users.",
 };
@@ -87,11 +87,11 @@ export default function PrivacyPage() {
             Noisebrief uses the following services to operate:
           </p>
           <ul className="mt-2 list-inside list-disc space-y-1 text-sm leading-relaxed text-muted-foreground">
-            <li>Vercel — hosting</li>
-            <li>Supabase — database (stores subscriber email addresses)</li>
-            <li>Anthropic — AI summaries</li>
-            <li>Resend — email delivery</li>
-            <li>Upstash — rate limiting</li>
+            <li>Hosting: Vercel</li>
+            <li>Database: Supabase (stores subscriber email addresses)</li>
+            <li>AI summaries: Anthropic</li>
+            <li>Email delivery: Resend</li>
+            <li>Rate limiting: Upstash</li>
           </ul>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             Each has their own privacy policy governing data they collect.

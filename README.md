@@ -2,13 +2,13 @@
 
 Today's tech noise. Briefly.
 
-[noisebrief.com](https://noisebrief.com) — a daily one-pager that answers "what happened today in tech?" It pulls from Hacker News, TechCrunch, The Verge, Wired, and Reddit; summarizes everything with AI into two punchy paragraphs; and lets you generate shareable recaps in six tones or get the whole thing by email every morning. No feeds to manage. Just open it, get briefed, move on.
+[noisebrief.com](https://noisebrief.com) | a daily one-pager that answers "what happened today in tech?" It pulls from Hacker News, TechCrunch, The Verge, Wired, and Reddit; summarizes everything with AI into two punchy paragraphs; and lets you generate shareable recaps in six tones or get the whole thing by email every morning. No feeds to manage. Just open it, get briefed, move on.
 
 ---
 
 ## What it does
 
-- Fetches RSS from Hacker News, TechCrunch, The Verge, Wired, and key Reddit subs — once per day via cron.
+- Fetches RSS from Hacker News, TechCrunch, The Verge, Wired, and key Reddit subs; once per day via cron.
 - Summarizes the lot with Claude into a title and 2–3 paragraphs, deduped against yesterday.
 - Lets you rewrite the brief in six tones (Quirky, Formal, Cheesy, Savage, Inspirational, TL;DR) and copy or share.
 - Sends a daily email digest to subscribers immediately after the 8 AM UTC cron job, with a welcome email on first signup.
@@ -55,7 +55,7 @@ See [`.env.example`](.env.example) for all variables with descriptions of what e
 
 ## Built by
 
-Built by [Barış Ermut](https://barisermut.com) — Senior PM learning to ship things with AI.
+Built by [Barış Ermut](https://barisermut.com) | Senior PM learning to ship things with AI.
 
 ---
 

@@ -5,11 +5,11 @@ import { NoisebriefContent } from "./components/NoisebriefContent";
 const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
-  title: "Noisebrief — Today's Tech News, Briefly",
+  title: "Noisebrief | Today's Tech News, Briefly",
   description:
     "Daily AI-generated tech news digest. Get today's most important tech stories summarized in plain English.",
   openGraph: {
-    title: "Noisebrief — Today's Tech News, Briefly",
+    title: "Noisebrief | Today's Tech News, Briefly",
     description:
       "Daily AI-generated tech news digest. Get today's most important tech stories summarized in plain English.",
     url: siteUrl,
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Noisebrief — Today's Tech News, Briefly",
+    title: "Noisebrief | Today's Tech News, Briefly",
     description: "Daily AI-generated tech news digest.",
   },
 };

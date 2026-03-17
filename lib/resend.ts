@@ -68,7 +68,7 @@ export async function sendDigestEmail(
     })
     .toUpperCase();
 
-  const subject = `Noisebrief | ${formattedDate} — ${brief.title}`;
+  const subject = `Noisebrief | ${formattedDate} : ${brief.title}`;
   const bodyParagraphs = brief.paragraphs.map(paragraphToHtml).join("");
   const unsubscribeUrl = `${UNSUBSCRIBE_BASE}?token=${encodeURIComponent(unsubscribeToken)}`;
 
