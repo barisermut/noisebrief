@@ -1,4 +1,4 @@
-import { jsonrepair } from "jsonrepair";
+import { tryParseJsonWithRepair } from "@/lib/llm-json";
 import type { ParagraphsField } from "@/types/brief";
 import { normalizeParagraphs } from "@/types/brief";
 
@@ -6,23 +6,10 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
 
-/** Model output often includes unescaped quotes inside strings (e.g. "Incognito Mode"), which breaks JSON.parse. */
-function parseJsonLenient(text: string): unknown | null {
-  try {
-    return JSON.parse(text);
-  } catch {
-    try {
-      return JSON.parse(jsonrepair(text));
-    } catch {
-      return null;
-    }
-  }
-}
-
 function parseBriefShape(text: string): Record<string, unknown> | null {
   const t = text.trim();
   if (!t.startsWith("{")) return null;
-  const parsed = parseJsonLenient(t);
+  const parsed = tryParseJsonWithRepair(t);
   if (!isRecord(parsed) || !Array.isArray(parsed.paragraphs)) return null;
   return parsed;
 }
@@ -66,7 +53,7 @@ export function normalizeBriefRowFields(row: {
   if (typeof paragraphs === "string") {
     const pt = paragraphs.trim();
     if (pt.startsWith("[") || pt.startsWith("{")) {
-      const parsed = parseJsonLenient(pt);
+      const parsed = tryParseJsonWithRepair(pt);
       if (parsed !== null) paragraphs = parsed;
     }
   }
@@ -95,6 +82,12 @@ export function normalizeBriefRowFields(row: {
   parasField = unwrapped.field;
   if (unwrapped.titleFromBlob && genericTitle(title)) {
     title = unwrapped.titleFromBlob;
+  }
+
+  if (!summary.trim() && parasField.length > 0) {
+    summary = normalizeParagraphs(parasField)
+      .map((p) => p.text)
+      .join("\n\n");
   }
 
   return { title, summary, paragraphs: parasField };

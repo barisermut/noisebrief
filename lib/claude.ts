@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { jsonrepair } from "jsonrepair";
+import { extractJsonObjectFromText, parseJsonWithRepair, tryParseJsonWithRepair } from "@/lib/llm-json";
+import { parseParagraphsFromPayload } from "@/lib/parse-model-brief";
 import type { BriefParagraph, ParagraphKeyword, Source } from "@/types";
 
 const SONNET_MODEL = "claude-sonnet-4-20250514";
@@ -24,90 +25,6 @@ function formatArticles(sources: Source[]): string {
 /** For keyword/URL instructions: title — url so Claude only uses these URLs. */
 function formatSourcesForKeywordLinks(sources: Source[]): string {
   return sources.map((s) => `- ${s.title} — ${s.url}`).join("\n");
-}
-
-/** Strip markdown fences and isolate `{ ... }` when the model adds prose around JSON. */
-function extractJsonObjectFromText(text: string): string {
-  const trimmed = text.trim();
-  const fence = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (fence) return fence[1].trim();
-  const start = trimmed.indexOf("{");
-  const end = trimmed.lastIndexOf("}");
-  if (start !== -1 && end > start) return trimmed.slice(start, end + 1);
-  return trimmed;
-}
-
-function parseJsonWithRepair(cleaned: string): unknown {
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    return JSON.parse(jsonrepair(cleaned));
-  }
-}
-
-function parseParagraphsFromPayload(
-  raw: unknown,
-  fallbackRawText: string
-): BriefParagraph[] {
-  if (typeof raw === "string") {
-    const inner = raw.trim();
-    if (inner.startsWith("[") || inner.startsWith("{")) {
-      try {
-        const parsed = parseJsonWithRepair(inner) as unknown;
-        if (Array.isArray(parsed)) {
-          return parseParagraphsFromPayload(parsed, fallbackRawText);
-        }
-        if (
-          parsed &&
-          typeof parsed === "object" &&
-          "paragraphs" in parsed &&
-          Array.isArray((parsed as { paragraphs: unknown }).paragraphs)
-        ) {
-          return parseParagraphsFromPayload(
-            (parsed as { paragraphs: unknown }).paragraphs,
-            fallbackRawText
-          );
-        }
-      } catch {
-        /* fall through to array / fallback paths */
-      }
-    }
-  }
-
-  if (Array.isArray(raw)) {
-    return raw.map((p: unknown) => {
-      if (typeof p === "string") {
-        return { text: p, keywords: [] };
-      }
-      const obj = p as Record<string, unknown>;
-      const text = typeof obj.text === "string" ? obj.text : "";
-      if ("keywords" in obj && Array.isArray(obj.keywords)) {
-        const keywords = (obj.keywords as Array<Record<string, unknown>>)
-          .filter(
-            (k) =>
-              typeof k.keyword === "string" && typeof k.url === "string"
-          )
-          .map((k) => ({ keyword: k.keyword as string, url: k.url as string }));
-        return { text, keywords };
-      }
-      if (
-        typeof obj.keyword === "string" &&
-        obj.keyword &&
-        typeof obj.url === "string" &&
-        obj.url
-      ) {
-        return {
-          text,
-          keywords: [{ keyword: obj.keyword, url: obj.url }],
-        };
-      }
-      return { text, keywords: [] };
-    });
-  }
-  return fallbackRawText
-    .split(/\n\n+/)
-    .filter(Boolean)
-    .map((text) => ({ text: text.trim(), keywords: [] }));
 }
 
 function wordsBetween(text: string, kw1: string, kw2: string): number {
@@ -312,18 +229,16 @@ If no clear match: { "keywords": [] }`;
       .join("")
       .trim() ?? "";
 
-  try {
-    const cleaned = text.replace(/^```json|```$/g, "").trim();
-    const parsed = JSON.parse(cleaned) as { keywords?: Array<{ keyword?: string; url?: string }> };
-    if (!Array.isArray(parsed.keywords)) return [];
-    return parsed.keywords
-      .filter(
-        (k) => typeof k.keyword === "string" && typeof k.url === "string"
-      )
-      .map((k) => ({ keyword: k.keyword!, url: k.url! }));
-  } catch {
-    return [];
-  }
+  const cleaned = extractJsonObjectFromText(text);
+  const parsed = tryParseJsonWithRepair(cleaned) as {
+    keywords?: Array<{ keyword?: string; url?: string }>;
+  } | null;
+  if (!parsed || !Array.isArray(parsed.keywords)) return [];
+  return parsed.keywords
+    .filter(
+      (k) => typeof k.keyword === "string" && typeof k.url === "string"
+    )
+    .map((k) => ({ keyword: k.keyword!, url: k.url! }));
 }
 
 const LINKEDIN_TONE_GUIDELINES: Record<string, string> = {
