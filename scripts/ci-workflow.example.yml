@@ -1,3 +1,5 @@
+# Copy this file to: .github/workflows/ci.yml (via GitHub website: Add file → Create new file)
+# Reason: HTTPS + PAT without "Workflows" permission cannot push workflow files from Git CLI.
 name: CI
 
 on:
