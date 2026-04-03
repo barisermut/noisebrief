@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { normalizeBriefRowFields } from "@/lib/brief-row";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 export type BriefMeta = {
@@ -21,7 +22,13 @@ export const getBriefByDate = cache(async (date: string): Promise<BriefMeta | nu
       .maybeSingle();
 
     if (error || !data) return null;
-    return data as BriefMeta;
+    const row = data as BriefMeta;
+    const n = normalizeBriefRowFields({
+      title: row.title,
+      summary: row.summary,
+      paragraphs: [],
+    });
+    return { date: row.date, title: n.title, summary: n.summary };
   } catch {
     return null;
   }

@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { jsonrepair } from "jsonrepair";
 import type { BriefParagraph, ParagraphKeyword, Source } from "@/types";
 
 const SONNET_MODEL = "claude-sonnet-4-20250514";
@@ -25,10 +26,54 @@ function formatSourcesForKeywordLinks(sources: Source[]): string {
   return sources.map((s) => `- ${s.title} — ${s.url}`).join("\n");
 }
 
+/** Strip markdown fences and isolate `{ ... }` when the model adds prose around JSON. */
+function extractJsonObjectFromText(text: string): string {
+  const trimmed = text.trim();
+  const fence = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fence) return fence[1].trim();
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  if (start !== -1 && end > start) return trimmed.slice(start, end + 1);
+  return trimmed;
+}
+
+function parseJsonWithRepair(cleaned: string): unknown {
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    return JSON.parse(jsonrepair(cleaned));
+  }
+}
+
 function parseParagraphsFromPayload(
   raw: unknown,
   fallbackRawText: string
 ): BriefParagraph[] {
+  if (typeof raw === "string") {
+    const inner = raw.trim();
+    if (inner.startsWith("[") || inner.startsWith("{")) {
+      try {
+        const parsed = parseJsonWithRepair(inner) as unknown;
+        if (Array.isArray(parsed)) {
+          return parseParagraphsFromPayload(parsed, fallbackRawText);
+        }
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          "paragraphs" in parsed &&
+          Array.isArray((parsed as { paragraphs: unknown }).paragraphs)
+        ) {
+          return parseParagraphsFromPayload(
+            (parsed as { paragraphs: unknown }).paragraphs,
+            fallbackRawText
+          );
+        }
+      } catch {
+        /* fall through to array / fallback paths */
+      }
+    }
+  }
+
   if (Array.isArray(raw)) {
     return raw.map((p: unknown) => {
       if (typeof p === "string") {
@@ -200,8 +245,11 @@ Articles:`;
 
   let parsed: { title?: string; paragraphs?: unknown };
   try {
-    const cleaned = text.replace(/^```json|```$/g, "").trim();
-    parsed = JSON.parse(cleaned) as { title?: string; paragraphs?: unknown };
+    const cleaned = extractJsonObjectFromText(text);
+    parsed = parseJsonWithRepair(cleaned) as {
+      title?: string;
+      paragraphs?: unknown;
+    };
   } catch {
     // Fallback: store paragraphs without keywords so cron still completes
     const fallbackParagraphs = validateParagraphs(

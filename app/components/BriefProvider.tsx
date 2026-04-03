@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { normalizeBriefRowFields } from "@/lib/brief-row";
 import type { ParagraphsField, Source, Tone } from "@/types";
 
 export interface BriefData {
@@ -23,12 +24,34 @@ export interface BriefData {
   isFallback?: boolean;
 }
 
-const BRIEF_STORAGE_KEY = "noisebrief_brief";
+/** Bumped when stored shape can be stale (e.g. bad JSON brief cached client-side). */
+const BRIEF_STORAGE_KEY = "noisebrief_brief_v2";
 const POSTS_STORAGE_KEY = "noisebrief_posts";
 /** In-memory cache of briefs by date (YYYY-MM-DD) to avoid refetch flash when switching dates. */
 const briefCache = new Map<string, BriefData>();
 
 import { getTodayDateString } from "@/lib/date";
+
+/** Same repair as API routes so sessionStorage / briefCache never bypasses fixes. */
+function repairBriefData(data: BriefData): BriefData {
+  const n = normalizeBriefRowFields({
+    title: data.title,
+    summary: data.summary,
+    paragraphs: data.paragraphs,
+  });
+  const paras =
+    n.paragraphs.length > 0
+      ? n.paragraphs
+      : n.summary
+        ? [n.summary]
+        : [];
+  return {
+    ...data,
+    title: n.title,
+    summary: n.summary,
+    paragraphs: paras,
+  };
+}
 
 function loadBriefFromStorage(): BriefData | null {
   if (typeof window === "undefined") return null;
@@ -129,13 +152,19 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
     const urlMatch = pathname.match(/^\/brief\/(\d{4}-\d{2}-\d{2})$/);
     const wantedDate = urlMatch ? urlMatch[1] : today;
     if (stored.date !== wantedDate) return;
-    briefCache.set(stored.date, stored);
-    setBrief(stored);
+    const repaired = repairBriefData(stored);
+    briefCache.set(stored.date, repaired);
+    setBrief(repaired);
     setSummaryComplete(true);
     setRestoredFromCache(true);
     setSourcesRevealed(true);
     setPostCache(loadPostsFromStorage());
     setLoading(false);
+    try {
+      sessionStorage.setItem(BRIEF_STORAGE_KEY, JSON.stringify(repaired));
+    } catch {
+      // ignore
+    }
   }, [today, pathname]);
 
   // URL is source of truth on load; when path is "/", selected date is latest available brief (not calendar today)
@@ -191,7 +220,9 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
     async (date: string) => {
       const cached = briefCache.get(date);
       if (cached) {
-        applyBrief(cached, true);
+        const repaired = repairBriefData(cached);
+        briefCache.set(date, repaired);
+        applyBrief(repaired, true);
         setLoading(false);
         setError(null);
         return;
@@ -212,7 +243,7 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
         const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Failed to load brief");
-        const nextBrief: BriefData = {
+        const nextBrief = repairBriefData({
           title: data.title ?? null,
           summary: data.summary ?? "",
           paragraphs: Array.isArray(data.paragraphs) ? data.paragraphs : [],
@@ -220,7 +251,7 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
           generatedAt: data.generatedAt ?? null,
           date: data.date ?? null,
           isFallback: data.isFallback === true,
-        };
+        });
         briefCache.set(date, nextBrief);
         applyBrief(nextBrief, false);
         if (date === latestAvailableDate) {
@@ -263,8 +294,14 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
       stored?.summary != null &&
       stored.date === selectedDate
     ) {
-      briefCache.set(stored.date, stored);
-      applyBrief(stored, true);
+      const repaired = repairBriefData(stored);
+      briefCache.set(stored.date, repaired);
+      applyBrief(repaired, true);
+      try {
+        sessionStorage.setItem(BRIEF_STORAGE_KEY, JSON.stringify(repaired));
+      } catch {
+        // ignore
+      }
       setPostCache(loadPostsFromStorage());
       setLoading(false);
       return;

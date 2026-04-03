@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { normalizeBriefRowFields } from "@/lib/brief-row";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { isValidDateString } from "@/lib/date";
 import type { Source } from "@/types";
@@ -49,15 +50,21 @@ export async function GET(
       sources: unknown;
       created_at: string;
     };
-    const paras = Array.isArray(row.paragraphs)
-      ? row.paragraphs
-      : row.summary
-        ? [row.summary]
-        : [];
+    const normalized = normalizeBriefRowFields({
+      title: row.title,
+      summary: row.summary,
+      paragraphs: row.paragraphs,
+    });
+    const paras =
+      normalized.paragraphs.length > 0
+        ? normalized.paragraphs
+        : normalized.summary
+          ? [normalized.summary]
+          : [];
 
     return NextResponse.json({
-      title: row.title ?? "",
-      summary: row.summary,
+      title: normalized.title ?? "",
+      summary: normalized.summary,
       paragraphs: paras,
       sources: (row.sources as Source[]) ?? [],
       generatedAt: row.created_at,

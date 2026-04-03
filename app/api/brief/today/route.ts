@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { normalizeBriefRowFields } from "@/lib/brief-row";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import type { Source } from "@/types";
 
@@ -12,14 +13,20 @@ interface BriefRow {
 }
 
 function formatBriefResponse(row: BriefRow, isFallback: boolean) {
-  const paras = Array.isArray(row.paragraphs)
-    ? row.paragraphs
-    : row.summary
-      ? [row.summary]
-      : [];
-  return {
-    title: row.title ?? "",
+  const normalized = normalizeBriefRowFields({
+    title: row.title,
     summary: row.summary,
+    paragraphs: row.paragraphs,
+  });
+  const paras =
+    normalized.paragraphs.length > 0
+      ? normalized.paragraphs
+      : normalized.summary
+        ? [normalized.summary]
+        : [];
+  return {
+    title: normalized.title ?? "",
+    summary: normalized.summary,
     paragraphs: paras,
     sources: (row.sources as Source[]) ?? [],
     generatedAt: row.created_at,

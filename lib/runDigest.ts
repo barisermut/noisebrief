@@ -1,7 +1,8 @@
+import { normalizeBriefRowFields } from "@/lib/brief-row";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { maskEmail } from "@/lib/maskEmail";
 import { sendDigestEmail } from "@/lib/resend";
-import { normalizeParagraphs, type ParagraphsField } from "@/types/brief";
+import { normalizeParagraphs } from "@/types/brief";
 
 export type DigestResult =
   | { ok: true; sent: number; failed: number }
@@ -18,7 +19,7 @@ export async function runDigest(): Promise<DigestResult> {
 
   const { data: briefRow, error: briefError } = await admin
     .from("daily_briefs")
-    .select("date, title, paragraphs")
+    .select("date, title, paragraphs, summary")
     .eq("date", today)
     .maybeSingle();
 
@@ -26,12 +27,23 @@ export async function runDigest(): Promise<DigestResult> {
     return { ok: false, reason: "no_brief_today" };
   }
 
-  const rawParagraphs = briefRow.paragraphs;
-  const paragraphs = normalizeParagraphs(
-    (Array.isArray(rawParagraphs) ? rawParagraphs : []) as ParagraphsField
-  );
+  const row = briefRow as {
+    date: string;
+    title: string | null;
+    paragraphs: unknown;
+    summary: string;
+  };
+  const { title, summary, paragraphs: parasField } = normalizeBriefRowFields({
+    title: row.title,
+    summary: row.summary,
+    paragraphs: row.paragraphs,
+  });
+  let paragraphs = normalizeParagraphs(parasField);
+  if (paragraphs.length === 0 && summary.trim()) {
+    paragraphs = normalizeParagraphs([summary]);
+  }
   const brief = {
-    title: briefRow.title ?? "",
+    title: title ?? "",
     paragraphs,
     date: briefRow.date,
   };
