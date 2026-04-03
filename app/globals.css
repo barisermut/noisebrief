@@ -138,38 +138,10 @@
   opacity: 1;
 }
 
-/* Tone-result card: opacity-only animation (compositor-only, no layout recalc on iOS) */
-.post-card-enter {
-  animation: post-card-fade-in 0.3s ease-out forwards;
-}
-@keyframes post-card-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* Skeleton pulse: CSS-only so it doesn't fight scroll on iOS */
-.post-card-skeleton-line {
-  animation: post-card-pulse 1.2s ease-in-out infinite;
-}
-.post-card-skeleton-line-2 {
-  animation-delay: 0.15s;
-}
-.post-card-skeleton-line-3 {
-  animation-delay: 0.3s;
-}
-@keyframes post-card-pulse {
-  0%,
-  100% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 0.6;
-  }
-}
+/* MAKE IT YOURS — disabled (tone result card + skeleton animations)
+.post-card-enter { ... }
+.post-card-skeleton-line { ... }
+*/
 
 /* Cursor blink: CSS-only so it doesn't fight scroll on iOS */
 .cursor-blink {

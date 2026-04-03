@@ -1,16 +1,12 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
-import type { Tone } from "@/types";
 import { normalizeParagraphs } from "@/types/brief";
 import { TypewriterSummary } from "./TypewriterSummary";
 import { AnimatedParagraphs } from "./AnimatedParagraphs";
 import { SummarySkeleton } from "./SummarySkeleton";
 import { SourceList } from "./SourceList";
-import { ToneSelector } from "./ToneSelector";
-import { GeneratedPost } from "./GeneratedPost";
-import { PostCardSkeleton } from "./PostCardSkeleton";
 import { BriefDatePicker } from "./BriefDatePicker";
 import { ThemeToggle } from "./ThemeToggle";
 import { SubscribePill } from "./SubscribePill";
@@ -35,21 +31,13 @@ export function NoisebriefContent() {
     summaryComplete,
     sourcesRevealed,
     restoredFromCache,
-    selectedTone,
-    postCache,
-    generatingTone,
-    generateError,
     handleSummaryComplete,
-    handleToneSelect,
     selectedDate,
     isHistorical,
     navigateToDate,
     availableDates,
     availableDatesLoading,
   } = useBrief();
-
-  const displayPost =
-    selectedTone !== null ? postCache.get(selectedTone) ?? null : null;
 
   const normalizedParagraphs = useMemo(
     () => normalizeParagraphs(brief?.paragraphs ?? []),
@@ -68,31 +56,15 @@ export function NoisebriefContent() {
   );
 
   const [scrolled, setScrolled] = useState(false);
-  const [toneSectionInView, setToneSectionInView] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [subscribeExpanded, setSubscribeExpanded] = useState(false);
-  const toneSectionRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
   }, []);
-
-  useEffect(() => {
-    const el = toneSectionRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([e]) => setToneSectionInView(e.isIntersecting),
-      { threshold: 0.1, rootMargin: "0px" }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [brief?.summary]);
-
-  const briefLoaded = !loading && !error && !!brief?.summary;
-  const showFloatingCta = briefLoaded && !toneSectionInView && !datePickerOpen && !sourcesOpen;
 
   return (
     <div className="flex min-h-full min-w-0 flex-col">
@@ -261,51 +233,11 @@ export function NoisebriefContent() {
         </section>
       )}
 
-      {brief?.summary && (
-        <section
-          ref={toneSectionRef}
-          id="make-it-yours"
-          className={`mt-6 mb-6 min-w-0 section-reveal ${(sourcesRevealed || isHistorical) ? "section-reveal-visible" : ""}`}
-        >
-          <div className="border-t border-black/8 dark:border-white/8 pt-8" />
-          <p className="mb-1 text-sm font-medium tracking-widest uppercase text-foreground/40">
-            MAKE IT YOURS
-          </p>
-          <p className="mb-3 text-sm text-foreground/50">
-            Rewrite today&apos;s brief in your voice.
-          </p>
-          <ToneSelector
-            selected={selectedTone}
-            onSelect={handleToneSelect}
-            loading={generatingTone !== null}
-          />
-          {generateError && (
-            <p className="mt-2 text-sm text-red-500 dark:text-red-400">{generateError}</p>
-          )}
-          <div className="mt-4">
-            {selectedTone &&
-              (generatingTone === selectedTone ? (
-                <PostCardSkeleton />
-              ) : displayPost ? (
-                <GeneratedPost post={displayPost} />
-              ) : null)}
-          </div>
-        </section>
-      )}
+      {/* MAKE IT YOURS — disabled (tone selector, LinkedIn-style posts, floating CTA). Restore from git. */}
 
         </div>
       </main>
-      {briefLoaded && (
-        <button
-          type="button"
-          onClick={() => toneSectionRef.current?.scrollIntoView({ behavior: "smooth" })}
-          className={`fixed z-30 flex items-center gap-2 rounded-full border border-teal-500/50 bg-background dark:bg-[#0a0a0f] px-4 py-2.5 text-sm font-medium text-teal-600 dark:text-teal-400 shadow-lg transition-all duration-300 hover:border-teal-500 hover:bg-teal-500/10 right-4 sm:right-6 ${showFloatingCta ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`}
-          style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
-          aria-label="Scroll to Make it yours"
-        >
-          Make it yours ↓
-        </button>
-      )}
+      {/* Floating “Make it yours” CTA removed with MAKE IT YOURS feature. */}
       <footer className="border-t border-zinc-200 dark:border-white/5 px-4 py-6 text-center text-xs text-foreground/50 sm:text-xs">
         <span>
           Built by{" "}

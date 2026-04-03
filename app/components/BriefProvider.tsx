@@ -12,7 +12,7 @@ import {
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { normalizeBriefRowFields } from "@/lib/brief-row";
-import type { ParagraphsField, Source, Tone } from "@/types";
+import type { ParagraphsField, Source } from "@/types";
 
 export interface BriefData {
   title: string | null;
@@ -26,7 +26,7 @@ export interface BriefData {
 
 /** Bumped when stored shape can be stale (e.g. bad JSON brief cached client-side). */
 const BRIEF_STORAGE_KEY = "noisebrief_brief_v2";
-const POSTS_STORAGE_KEY = "noisebrief_posts";
+// MAKE IT YOURS — disabled: const POSTS_STORAGE_KEY = "noisebrief_posts";
 /** In-memory cache of briefs by date (YYYY-MM-DD) to avoid refetch flash when switching dates. */
 const briefCache = new Map<string, BriefData>();
 
@@ -66,18 +66,9 @@ function loadBriefFromStorage(): BriefData | null {
   }
 }
 
-function loadPostsFromStorage(): Map<Tone, string> {
-  if (typeof window === "undefined") return new Map();
-  try {
-    const raw = sessionStorage.getItem(POSTS_STORAGE_KEY);
-    if (!raw) return new Map();
-    const obj = JSON.parse(raw) as Record<string, string>;
-    if (!obj || typeof obj !== "object") return new Map();
-    return new Map(Object.entries(obj)) as Map<Tone, string>;
-  } catch {
-    return new Map();
-  }
-}
+/* MAKE IT YOURS — disabled
+function loadPostsFromStorage(): Map<Tone, string> { ... }
+*/
 
 interface BriefContextValue {
   brief: BriefData | null;
@@ -86,13 +77,7 @@ interface BriefContextValue {
   summaryComplete: boolean;
   sourcesRevealed: boolean;
   restoredFromCache: boolean;
-  selectedTone: Tone | null;
-  setSelectedTone: (tone: Tone | null) => void;
-  postCache: Map<Tone, string>;
-  generatingTone: Tone | null;
-  generateError: string | null;
   handleSummaryComplete: () => void;
-  handleToneSelect: (tone: Tone) => void;
   setSummaryComplete: (v: boolean) => void;
   setSourcesRevealed: (v: boolean) => void;
   /** Current date from URL: today (/) or YYYY-MM-DD (/brief/YYYY-MM-DD). */
@@ -132,12 +117,6 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
   const [summaryComplete, setSummaryComplete] = useState(false);
   const [sourcesRevealed, setSourcesRevealed] = useState(false);
   const [restoredFromCache, setRestoredFromCache] = useState(false);
-  const [selectedTone, setSelectedTone] = useState<Tone | null>(null);
-  const [postCache, setPostCache] = useState<Map<Tone, string>>(new Map());
-  const postCacheRef = useRef<Map<Tone, string>>(postCache);
-  postCacheRef.current = postCache;
-  const [generatingTone, setGeneratingTone] = useState<Tone | null>(null);
-  const [generateError, setGenerateError] = useState<string | null>(null);
 
   // Restore from sessionStorage before browser paint to prevent typewriter replay.
   // useLayoutEffect runs after hydration but before the browser paints,
@@ -158,7 +137,6 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
     setSummaryComplete(true);
     setRestoredFromCache(true);
     setSourcesRevealed(true);
-    setPostCache(loadPostsFromStorage());
     setLoading(false);
     try {
       sessionStorage.setItem(BRIEF_STORAGE_KEY, JSON.stringify(repaired));
@@ -213,7 +191,6 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
     setSummaryComplete(fromCache);
     setRestoredFromCache(fromCache);
     setSourcesRevealed(fromCache);
-    setPostCache(new Map());
   }, []);
 
   const fetchBriefForDate = useCallback(
@@ -234,7 +211,6 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
       setSummaryComplete(false);
       setRestoredFromCache(false);
       setSourcesRevealed(false);
-      setPostCache(new Map());
 
       const isToday = date === today;
       const url = isToday ? "/api/brief/today" : `/api/brief/${date}`;
@@ -257,7 +233,6 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
         if (date === latestAvailableDate) {
           try {
             sessionStorage.setItem(BRIEF_STORAGE_KEY, JSON.stringify(nextBrief));
-            sessionStorage.removeItem(POSTS_STORAGE_KEY);
           } catch {
             // ignore
           }
@@ -302,24 +277,11 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
       } catch {
         // ignore
       }
-      setPostCache(loadPostsFromStorage());
       setLoading(false);
       return;
     }
     fetchBriefForDate(selectedDate);
   }, [selectedDate, latestAvailableDate, pathname, availableDatesLoaded, fetchBriefForDate, applyBrief]);
-
-  useEffect(() => {
-    if (postCache.size === 0) return;
-    try {
-      sessionStorage.setItem(
-        POSTS_STORAGE_KEY,
-        JSON.stringify(Object.fromEntries(postCache))
-      );
-    } catch {
-      // ignore
-    }
-  }, [postCache]);
 
   useEffect(() => {
     if (!summaryComplete || !brief?.sources.length) return;
@@ -331,50 +293,6 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
 
   const handleSummaryComplete = useCallback(() => setSummaryComplete(true), []);
 
-  const handleToneSelect = useCallback(
-    async (tone: Tone) => {
-      setSelectedTone(tone);
-      setGenerateError(null);
-
-      const cached = postCacheRef.current.get(tone);
-      if (cached) return;
-
-      if (!brief?.date) {
-        setGenerateError("No brief date available.");
-        return;
-      }
-
-      setGeneratingTone(tone);
-      try {
-        const res = await fetch("/api/post/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tone,
-            summary: brief.summary,
-            briefDate: brief.date,
-          }),
-          signal: AbortSignal.timeout(35_000),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "Failed to generate");
-        setPostCache((prev) => new Map(prev).set(tone, data.post));
-      } catch (e) {
-        if (process.env.NODE_ENV === "development") {
-          console.error("LinkedIn generate error:", e);
-        }
-        const message =
-          e instanceof Error && e.name === "AbortError"
-            ? "Request took too long. Please try again."
-            : "Couldn't generate the post. Please try again.";
-        setGenerateError(message);
-      } finally {
-        setGeneratingTone(null);
-      }
-    },
-    [brief?.summary, brief?.date]
-  );
-
   const value: BriefContextValue = useMemo(
     () => ({
       brief,
@@ -383,13 +301,7 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
       summaryComplete,
       sourcesRevealed,
       restoredFromCache,
-      selectedTone,
-      setSelectedTone,
-      postCache,
-      generatingTone,
-      generateError,
       handleSummaryComplete,
-      handleToneSelect,
       setSummaryComplete,
       setSourcesRevealed,
       selectedDate,
@@ -405,12 +317,7 @@ export function BriefProvider({ children }: { children: React.ReactNode }) {
       summaryComplete,
       sourcesRevealed,
       restoredFromCache,
-      selectedTone,
-      postCache,
-      generatingTone,
-      generateError,
       handleSummaryComplete,
-      handleToneSelect,
       selectedDate,
       isHistorical,
       navigateToDate,

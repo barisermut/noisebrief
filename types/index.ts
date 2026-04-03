@@ -28,7 +28,9 @@ export interface DailyBrief {
   createdAt: string;
 }
 
+/* MAKE IT YOURS — disabled
 export interface GeneratedPost {
   tone: Tone;
   post: string;
 }
+*/

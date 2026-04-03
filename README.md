@@ -4,7 +4,7 @@
 
 Today's tech noise. Briefly.
 
-[noisebrief.com](https://noisebrief.com) | a daily one-pager that answers "what happened today in tech?" It pulls from Hacker News, TechCrunch, The Verge, Wired, and Reddit; summarizes everything with AI into two punchy paragraphs; and lets you generate shareable recaps in six tones or get the whole thing by email every morning. No feeds to manage. Just open it, get briefed, move on.
+[noisebrief.com](https://noisebrief.com) | a daily one-pager that answers "what happened today in tech?" It pulls from Hacker News, TechCrunch, The Verge, Wired, and Reddit; summarizes everything with AI into two punchy paragraphs; you can get the daily digest by email every morning. No feeds to manage. Just open it, get briefed, move on.
 
 ---
 
@@ -12,7 +12,6 @@ Today's tech noise. Briefly.
 
 - Fetches RSS from Hacker News, TechCrunch, The Verge, Wired, and key Reddit subs; once per day via cron.
 - Summarizes the lot with Claude into a title and 2–3 paragraphs, deduped against yesterday.
-- Lets you rewrite the brief in six tones (Quirky, Formal, Cheesy, Savage, Inspirational, TL;DR) and copy or share.
 - Sends a daily email digest to subscribers immediately after the 8 AM UTC cron job, with a welcome email on first signup.
 
 ---
@@ -25,16 +24,16 @@ Today's tech noise. Briefly.
 | TypeScript      | Strict typing across app and API             |
 | Tailwind CSS v4 | Styling; Syne font, dark/light theme         |
 | Supabase        | Postgres for briefs, subscribers, cache      |
-| Anthropic Claude API | Daily summary (Sonnet), tone posts (Haiku) |
+| Anthropic Claude API | Daily summary (Sonnet) |
 | Resend          | Welcome and digest emails                    |
 | Vercel          | Hosting and cron (daily 8AM UTC)             |
-| Upstash Redis   | Rate limiting (subscribe, post, favicon)      |
+| Upstash Redis   | Rate limiting (subscribe, favicon)      |
 
 ---
 
 ## How it works
 
-A Vercel cron job runs at 8 AM UTC: it fetches all RSS sources in parallel, dedupes against yesterday’s brief, sends the batch to Claude for one summary call, and stores the result in Supabase. The site serves today’s (or latest) brief via API; users can browse by date, generate tone variants (cached in DB), and subscribe for the daily digest. Immediately after, the same cron job sends the digest email to all active subscribers. New subscribers get a welcome email immediately.
+A Vercel cron job runs at 8 AM UTC: it fetches all RSS sources in parallel, dedupes against yesterday’s brief, sends the batch to Claude for one summary call, and stores the result in Supabase. The site serves today’s (or latest) brief via API; users can browse by date and subscribe for the daily digest. Immediately after, the same cron job sends the digest email to all active subscribers. New subscribers get a welcome email immediately.
 
 ---
 
