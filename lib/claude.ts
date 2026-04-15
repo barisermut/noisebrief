@@ -3,7 +3,7 @@ import { extractJsonObjectFromText, parseJsonWithRepair, tryParseJsonWithRepair 
 import { parseParagraphsFromPayload } from "@/lib/parse-model-brief";
 import type { BriefParagraph, ParagraphKeyword, Source } from "@/types";
 
-const SONNET_MODEL = "claude-sonnet-4-20250514";
+const SONNET_MODEL = "claude-sonnet-4-6";
 const HAIKU_MODEL = "claude-haiku-4-5-20251001";
 
 let _anthropic: Anthropic | null = null;
