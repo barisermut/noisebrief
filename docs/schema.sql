@@ -16,7 +16,12 @@ alter table public.daily_briefs add column if not exists title text;
 alter table public.daily_briefs add column if not exists paragraphs jsonb;
 alter table public.daily_briefs add column if not exists generated_posts jsonb;
 
--- Optional: RLS (allow public read, restrict write to service role)
+-- Explicit grants required for Data API (PostgREST/supabase-js) access
+grant select on public.daily_briefs to anon;
+grant select, insert, update, delete on public.daily_briefs to authenticated;
+grant select, insert, update, delete on public.daily_briefs to service_role;
+
+-- RLS (allow public read, restrict write to service role)
 alter table daily_briefs enable row level security;
 
 create policy "Allow public read"
@@ -36,6 +41,9 @@ create table if not exists email_subscribers (
   unsubscribe_token text not null unique,
   unsubscribed_at timestamp with time zone
 );
+
+-- Explicit grants required for Data API (PostgREST/supabase-js) access
+grant select, insert, update, delete on public.email_subscribers to service_role;
 
 alter table email_subscribers enable row level security;
 
