@@ -56,7 +56,10 @@ export function normalizeBriefRowFields(row: {
   if (typeof paragraphs === "string") {
     const pt = paragraphs.trim();
     if (pt.startsWith("[") || pt.startsWith("{") || pt.startsWith("```")) {
-      const parsed = tryParseJsonWithRepair(extractJsonObjectFromText(pt));
+      const candidate = pt.startsWith("```")
+        ? extractJsonObjectFromText(pt)
+        : pt;
+      const parsed = tryParseJsonWithRepair(candidate);
       if (parsed !== null) paragraphs = parsed;
     }
   }
