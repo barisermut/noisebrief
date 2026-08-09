@@ -114,8 +114,8 @@ export function TypewriterSummary({
       style={{ willChange: "opacity" }}
       className={className}
     >
-      {skipToEnd || skipRef?.current === true ? text : displayed}
-      {!skipToEnd && skipRef?.current !== true && index < text.length && (
+      {skipToEnd ? text : displayed}
+      {!skipToEnd && index < text.length && (
         <motion.span
           layout={false}
           animate={{ opacity: [1, 0] }}
