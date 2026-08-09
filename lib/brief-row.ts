@@ -1,4 +1,7 @@
-import { tryParseJsonWithRepair } from "@/lib/llm-json";
+import {
+  extractJsonObjectFromText,
+  tryParseJsonWithRepair,
+} from "@/lib/llm-json";
 import type { ParagraphsField } from "@/types/brief";
 import { normalizeParagraphs } from "@/types/brief";
 
@@ -7,7 +10,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 
 function parseBriefShape(text: string): Record<string, unknown> | null {
-  const t = text.trim();
+  const t = extractJsonObjectFromText(text);
   if (!t.startsWith("{")) return null;
   const parsed = tryParseJsonWithRepair(t);
   if (!isRecord(parsed) || !Array.isArray(parsed.paragraphs)) return null;
@@ -52,8 +55,8 @@ export function normalizeBriefRowFields(row: {
 
   if (typeof paragraphs === "string") {
     const pt = paragraphs.trim();
-    if (pt.startsWith("[") || pt.startsWith("{")) {
-      const parsed = tryParseJsonWithRepair(pt);
+    if (pt.startsWith("[") || pt.startsWith("{") || pt.startsWith("```")) {
+      const parsed = tryParseJsonWithRepair(extractJsonObjectFromText(pt));
       if (parsed !== null) paragraphs = parsed;
     }
   }
@@ -103,7 +106,7 @@ function unwrapParagraphFieldIfEmbeddedBriefJson(
   const only = field[0];
   const text =
     typeof only === "string" ? only : ((only as { text?: string }).text ?? "");
-  if (typeof text !== "string" || !text.trim().startsWith("{")) {
+  if (typeof text !== "string" || !text.trim()) {
     return { field, titleFromBlob: null };
   }
   const parsed = parseBriefShape(text);

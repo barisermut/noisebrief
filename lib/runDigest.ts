@@ -1,4 +1,5 @@
 import { normalizeBriefRowFields } from "@/lib/brief-row";
+import { isPublishableBrief } from "@/lib/brief-guard";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { maskEmail } from "@/lib/maskEmail";
 import { sendDigestEmail } from "@/lib/resend";
@@ -6,7 +7,14 @@ import { normalizeParagraphs } from "@/types/brief";
 
 export type DigestResult =
   | { ok: true; sent: number; failed: number }
-  | { ok: false; reason: "no_brief_today" | "no_subscribers" | "subscriber_fetch_error" };
+  | {
+      ok: false;
+      reason:
+        | "no_brief_today"
+        | "invalid_brief"
+        | "no_subscribers"
+        | "subscriber_fetch_error";
+    };
 
 /**
  * Runs the digest: loads today's brief and active subscribers, sends digest emails.
@@ -41,6 +49,10 @@ export async function runDigest(): Promise<DigestResult> {
   let paragraphs = normalizeParagraphs(parasField);
   if (paragraphs.length === 0 && summary.trim()) {
     paragraphs = normalizeParagraphs([summary]);
+  }
+  if (!isPublishableBrief(title, paragraphs)) {
+    console.error("Digest rejected unpublishable brief");
+    return { ok: false, reason: "invalid_brief" };
   }
   const brief = {
     title: title ?? "",

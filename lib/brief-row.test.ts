@@ -1,6 +1,12 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { normalizeBriefRowFields } from "@/lib/brief-row";
 import type { ParagraphsField } from "@/types/brief";
+
+const PRODUCTION_FAILURE = readFileSync(
+  new URL("./__fixtures__/unescaped-quotes-brief.txt", import.meta.url),
+  "utf8"
+);
 
 /**
  * Regression: Sonnet returned JSON with unescaped double quotes inside a string
@@ -56,6 +62,19 @@ describe("normalizeBriefRowFields", () => {
     expect(texts[2]).toContain("Perplexity");
   });
 
+  it("recovers today's fenced production payload from summary", () => {
+    const out = normalizeBriefRowFields({
+      title: "Today's Brief",
+      summary: PRODUCTION_FAILURE,
+      paragraphs: [],
+    });
+
+    expect(out.title).toBe("AI Reshapes Work, Power, Platforms");
+    expect(out.paragraphs).toHaveLength(3);
+    expect(out.summary).not.toContain("```json");
+    expect(out.summary).toContain('"Original Content Rewards,"');
+  });
+
   it("unwraps a single paragraph whose text is the full malformed brief JSON blob", () => {
     const out = normalizeBriefRowFields({
       title: "Today's Brief",
@@ -71,6 +90,18 @@ describe("normalizeBriefRowFields", () => {
     expect(out.title).toBe("AI Breakthroughs and Big Bets");
     expect(out.paragraphs).toHaveLength(3);
     expect(out.summary).toContain("Microsoft");
+  });
+
+  it("unwraps a single paragraph containing today's fenced production payload", () => {
+    const out = normalizeBriefRowFields({
+      title: "Today's Brief",
+      summary: PRODUCTION_FAILURE,
+      paragraphs: [{ text: PRODUCTION_FAILURE, keywords: [] }],
+    });
+
+    expect(out.title).toBe("AI Reshapes Work, Power, Platforms");
+    expect(out.paragraphs).toHaveLength(3);
+    expect(out.summary).not.toContain("```json");
   });
 
   it("parses paragraphs column when stored as a JSON string (double-encoded)", () => {
