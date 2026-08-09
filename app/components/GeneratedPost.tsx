@@ -7,5 +7,6 @@ interface GeneratedPostProps {
 }
 
 export function GeneratedPost(_props: GeneratedPostProps) {
+  void _props;
   return null;
 }

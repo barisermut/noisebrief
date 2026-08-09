@@ -163,7 +163,7 @@ export function SourceList({ sources, briefDate, summaryComplete = false, isHist
       setSearch("");
       setPage(1);
     }
-  }, []);
+  }, [setOpen]);
 
   return (
     <>

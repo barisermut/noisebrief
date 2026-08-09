@@ -14,9 +14,13 @@ export type Theme = "light" | "dark" | "system";
 
 function getStoredTheme(): Theme {
   if (typeof window === "undefined") return "system";
-  const t = window.localStorage.getItem(STORAGE_KEY);
-  if (t === "light" || t === "dark" || t === "system") return t;
-  return "system";
+  try {
+    const t = window.localStorage.getItem(STORAGE_KEY);
+    if (t === "light" || t === "dark" || t === "system") return t;
+    return "system";
+  } catch {
+    return "system";
+  }
 }
 
 function getResolvedDark(theme: Theme): boolean {
@@ -41,16 +45,10 @@ export function useTheme(): ThemeContextValue {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "system";
-    try {
-      const t = localStorage.getItem(STORAGE_KEY);
-      return (t === "light" || t === "dark" || t === "system" ? t : "system") as Theme;
-    } catch {
-      return "system";
-    }
-  });
-  const [resolvedDark, setResolvedDark] = useState(false);
+  const [theme, setThemeState] = useState<Theme>(getStoredTheme);
+  const [resolvedDark, setResolvedDark] = useState(() =>
+    getResolvedDark(getStoredTheme())
+  );
 
   const setTheme = useCallback((next: Theme) => {
     setThemeState(next);
@@ -64,22 +62,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setResolvedDark(dark);
     }
   }, []);
-
-  // On mount: read localStorage and sync state only (inline script already set html class before paint)
-  useEffect(() => {
-    const stored = getStoredTheme();
-    setThemeState(stored);
-    setResolvedDark(getResolvedDark(stored));
-  }, []);
-
-  // When theme changes: sync html class (backup for any state-driven updates)
-  useEffect(() => {
-    const dark = getResolvedDark(theme);
-    setResolvedDark(dark);
-    const root = document.documentElement;
-    if (dark) root.classList.add("dark");
-    else root.classList.remove("dark");
-  }, [theme]);
 
   // When theme is "system", listen to prefers-color-scheme changes
   useEffect(() => {

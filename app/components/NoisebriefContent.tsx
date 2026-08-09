@@ -29,7 +29,6 @@ export function NoisebriefContent() {
     loading,
     error,
     summaryComplete,
-    sourcesRevealed,
     restoredFromCache,
     handleSummaryComplete,
     selectedDate,
@@ -44,16 +43,12 @@ export function NoisebriefContent() {
     [brief?.paragraphs]
   );
 
-  const briefDateBadge = useMemo(
-    () =>
-      brief?.date
-        ? new Date(brief.date + "T12:00:00").toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          })
-        : null,
-    [brief?.date]
-  );
+  const briefDateBadge = brief?.date
+    ? new Date(brief.date + "T12:00:00").toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      })
+    : null;
 
   const [scrolled, setScrolled] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);

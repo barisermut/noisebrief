@@ -23,7 +23,7 @@ export function TypewriterSummary({
   const [displayed, setDisplayed] = useState("");
   const [index, setIndex] = useState(0);
   const [completedFired, setCompletedFired] = useState(false);
-  const startTimeRef = useRef<number>(Date.now());
+  const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
     startTimeRef.current = Date.now();
