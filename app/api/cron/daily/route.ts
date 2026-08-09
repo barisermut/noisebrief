@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
+import { isPublishableBrief } from "@/lib/brief-guard";
 import { fetchAllSources } from "@/lib/fetchAllSources";
 import { generateDailySummary } from "@/lib/claude";
 import { getSupabaseAdmin } from "@/lib/supabase";
@@ -83,6 +84,11 @@ export async function GET(request: Request) {
     } catch (err) {
       console.error("Cron error after Claude API call", err);
       throw new Error("Claude API failed");
+    }
+
+    if (!isPublishableBrief(title, paragraphs)) {
+      console.error("Cron rejected unpublishable brief");
+      throw new Error("Generated brief failed publish guard");
     }
 
     const today = new Date().toISOString().slice(0, 10);

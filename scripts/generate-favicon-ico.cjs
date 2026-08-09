@@ -20,12 +20,10 @@ async function main() {
 
   const icoBuffer = await pngToIco(pngBuffers);
   fs.writeFileSync(outPath, icoBuffer);
-  // eslint-disable-next-line no-console
   console.log(`Wrote ${path.relative(repoRoot, outPath)} (${icoBuffer.length} bytes)`);
 }
 
 main().catch((err) => {
-  // eslint-disable-next-line no-console
   console.error(err);
   process.exitCode = 1;
 });

@@ -25,7 +25,7 @@ export interface BriefData {
 }
 
 /** Bumped when stored shape can be stale (e.g. bad JSON brief cached client-side). */
-const BRIEF_STORAGE_KEY = "noisebrief_brief_v2";
+const BRIEF_STORAGE_KEY = "noisebrief_brief_v3";
 // MAKE IT YOURS — disabled: const POSTS_STORAGE_KEY = "noisebrief_posts";
 /** In-memory cache of briefs by date (YYYY-MM-DD) to avoid refetch flash when switching dates. */
 const briefCache = new Map<string, BriefData>();

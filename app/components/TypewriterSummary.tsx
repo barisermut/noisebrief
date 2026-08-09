@@ -12,7 +12,11 @@ interface TypewriterSummaryProps {
   skipRef?: React.RefObject<boolean>;
 }
 
-export function TypewriterSummary({
+export function TypewriterSummary(props: TypewriterSummaryProps) {
+  return <TypewriterAnimation key={props.text} {...props} />;
+}
+
+function TypewriterAnimation({
   text,
   className = "",
   onComplete,
@@ -23,23 +27,11 @@ export function TypewriterSummary({
   const [displayed, setDisplayed] = useState("");
   const [index, setIndex] = useState(0);
   const [completedFired, setCompletedFired] = useState(false);
-  const startTimeRef = useRef<number>(Date.now());
+  const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
     startTimeRef.current = Date.now();
-    setDisplayed("");
-    setIndex(0);
-    setCompletedFired(false);
-  }, [text]);
-
-  useEffect(() => {
-    if ((skipToEnd || skipRef?.current === true) && text.length > 0 && !completedFired) {
-      setIndex(text.length);
-      setDisplayed(text);
-      setCompletedFired(true);
-      onComplete?.();
-    }
-  }, [skipToEnd, text, onComplete, completedFired, skipRef]);
+  }, []);
 
   useEffect(() => {
     let rafId: number;
@@ -114,8 +106,8 @@ export function TypewriterSummary({
       style={{ willChange: "opacity" }}
       className={className}
     >
-      {skipToEnd || skipRef?.current === true ? text : displayed}
-      {!skipToEnd && skipRef?.current !== true && index < text.length && (
+      {skipToEnd ? text : displayed}
+      {!skipToEnd && index < text.length && (
         <motion.span
           layout={false}
           animate={{ opacity: [1, 0] }}

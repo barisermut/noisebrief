@@ -11,5 +11,6 @@ interface ToneSelectorProps {
 }
 
 export function ToneSelector(_props: ToneSelectorProps) {
+  void _props;
   return null;
 }
