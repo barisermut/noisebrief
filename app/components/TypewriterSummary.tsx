@@ -12,7 +12,11 @@ interface TypewriterSummaryProps {
   skipRef?: React.RefObject<boolean>;
 }
 
-export function TypewriterSummary({
+export function TypewriterSummary(props: TypewriterSummaryProps) {
+  return <TypewriterAnimation key={props.text} {...props} />;
+}
+
+function TypewriterAnimation({
   text,
   className = "",
   onComplete,
@@ -27,19 +31,7 @@ export function TypewriterSummary({
 
   useEffect(() => {
     startTimeRef.current = Date.now();
-    setDisplayed("");
-    setIndex(0);
-    setCompletedFired(false);
-  }, [text]);
-
-  useEffect(() => {
-    if ((skipToEnd || skipRef?.current === true) && text.length > 0 && !completedFired) {
-      setIndex(text.length);
-      setDisplayed(text);
-      setCompletedFired(true);
-      onComplete?.();
-    }
-  }, [skipToEnd, text, onComplete, completedFired, skipRef]);
+  }, []);
 
   useEffect(() => {
     let rafId: number;
