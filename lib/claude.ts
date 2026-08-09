@@ -15,8 +15,7 @@ const BRIEF_SCHEMA = {
     title: { type: "string" },
     paragraphs: {
       type: "array",
-      minItems: 3,
-      maxItems: 3,
+      description: "Exactly three editorial paragraphs",
       items: {
         type: "object",
         properties: {
