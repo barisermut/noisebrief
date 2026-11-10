@@ -29,10 +29,9 @@ export function ThemeToggle() {
       onClick={cycle}
       title={title}
       aria-label={title}
-      suppressHydrationWarning
-      className="inline-flex items-center justify-center align-middle rounded-md p-1 hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer transition-colors text-foreground/50 hover:text-foreground dark:text-foreground/50 dark:hover:text-white"
+      className="inline-flex min-h-8 min-w-8 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
     >
-      <Icon className="h-4 w-4 sm:h-[1em] sm:w-[1em] sm:text-sm" aria-hidden suppressHydrationWarning />
+      <Icon className="h-4 w-4" aria-hidden />
     </button>
   );
 }

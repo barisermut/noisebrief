@@ -1,187 +1,163 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Mail, ArrowRight, CheckCircle, Loader2 } from "lucide-react";
 
 type State = "idle" | "expanded" | "loading" | "success" | "error";
 
-export function SubscribePill({ className, onExpandedChange }: { className?: string; onExpandedChange?: (expanded: boolean) => void }) {
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function SubscribePill({ onExpandedChange }: { onExpandedChange?: (expanded: boolean) => void }) {
   const [state, setState] = useState<State>("idle");
   const [email, setEmail] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
-  const pillRef = useRef<HTMLDivElement>(null);
+  const pillRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isValidEmail = EMAIL_REGEX.test(email);
+  const showInput = state === "expanded" || state === "loading";
 
   useEffect(() => {
-    onExpandedChange?.(state === "expanded" || state === "loading");
-  }, [state, onExpandedChange]);
+    onExpandedChange?.(showInput);
+  }, [showInput, onExpandedChange]);
 
-  // Click outside → collapse to idle
+  const idleButtonRef = useRef<HTMLButtonElement>(null);
+  const restoreFocus = useRef(false);
+
+  const collapse = useCallback(() => {
+    setState("idle");
+    setEmail("");
+  }, []);
+
+  // After closing with Escape, keyboard focus returns to the Subscribe button.
   useEffect(() => {
-    if (state !== "expanded" && state !== "loading") return;
+    if (state === "idle" && restoreFocus.current) {
+      restoreFocus.current = false;
+      idleButtonRef.current?.focus();
+    }
+  }, [state]);
+
+  // Click outside → collapse.
+  useEffect(() => {
+    if (state !== "expanded") return;
     const handler = (e: MouseEvent) => {
-      if (pillRef.current && !pillRef.current.contains(e.target as Node)) {
-        setState("idle");
-        setEmail("");
-      }
+      if (pillRef.current && !pillRef.current.contains(e.target as Node)) collapse();
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [state]);
+  }, [state, collapse]);
 
-  // Auto-focus input when expanded — shorter delay on mobile so keyboard opens without re-tap
-  useEffect(() => {
-    if (state === "expanded") {
-      const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
-      const delay = isMobile ? 50 : 300;
-      const t = setTimeout(() => inputRef.current?.focus(), delay);
-      return () => clearTimeout(t);
-    }
-  }, [state]);
-
-  // Error auto-reset
+  // Error message auto-resets back to the form.
   useEffect(() => {
     if (state !== "error") return;
-    const t = setTimeout(() => setState("expanded"), 2000);
+    const t = setTimeout(() => setState("expanded"), 2500);
     return () => clearTimeout(t);
   }, [state]);
 
-  const submit = useCallback(async () => {
-    if (!isValidEmail || state !== "expanded") return;
-    setState("loading");
-    try {
-      const res = await fetch("/api/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      if (res.ok) {
-        setState("success");
-      } else {
-        setErrorMsg("Try again");
-        setState("error");
-      }
-    } catch {
-      setErrorMsg("Try again");
-      setState("error");
-    }
-  }, [email, isValidEmail, state]);
-
-  const borderColor =
-    state === "expanded" || state === "loading"
-      ? "border-teal-500 dark:border-teal-400"
-      : state === "success"
-      ? "border-teal-500 dark:border-teal-400"
-      : state === "error"
-      ? "border-red-400"
-      : "border-black/15 dark:border-white/15";
-
-  const isExpandedOrLoading = state === "expanded" || state === "loading";
-  const widthClass = isExpandedOrLoading ? "w-full max-w-[65vw] sm:max-w-[360px]" : "w-auto";
-
-  const expandAndFocus = useCallback(() => {
+  const expand = useCallback(() => {
     setState("expanded");
+    // Focus synchronously inside the tap handler so iOS opens the keyboard.
     inputRef.current?.focus();
   }, []);
 
-  const showInputRow = state === "expanded" || state === "loading";
+  const submit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!isValidEmail || state !== "expanded") return;
+      setState("loading");
+      try {
+        const res = await fetch("/api/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+        setState(res.ok ? "success" : "error");
+      } catch {
+        setState("error");
+      }
+    },
+    [email, isValidEmail, state]
+  );
+
+  const border =
+    state === "error" ? "border-destructive" : state === "idle" ? "border-input hover:border-foreground/30" : "border-ring";
 
   return (
-    <motion.div
+    <form
       ref={pillRef}
-      layout
-      transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-      className={`flex items-center h-9 rounded-full border bg-background overflow-hidden ${widthClass} ${borderColor} ${className ?? ""}`}
-      style={{ originX: 1 }}
+      onSubmit={submit}
+      onKeyDown={(e) => {
+        if (e.key === "Escape" && state === "expanded") {
+          restoreFocus.current = true;
+          collapse();
+        }
+      }}
+      className={`relative flex h-11 items-center overflow-hidden rounded-full border bg-background transition-[border-color,max-width] duration-300 ${border} ${showInput ? "w-full max-w-[65vw] sm:max-w-[360px]" : "w-auto"}`}
+      noValidate
     >
-      {/* Input row: always in DOM (hidden unless expanded/loading) so focus() in touch handler runs on existing element — required for iOS keyboard */}
+      {/* Kept in the DOM (hidden + untabbable) so the tap handler can focus it synchronously: iOS needs that to open the keyboard. */}
       <div
-        className={`flex items-center w-full px-3 gap-2 ${!showInputRow ? "absolute opacity-0 w-0 h-0 overflow-hidden pointer-events-none" : ""}`}
-        aria-hidden={!showInputRow}
+        aria-hidden={!showInput}
+        className={`flex w-full items-center gap-2 pl-3 pr-1 ${showInput ? "" : "pointer-events-none absolute h-0 w-0 opacity-0"}`}
       >
-        <Mail className="h-3.5 w-3.5 shrink-0 text-foreground/40" />
+        <Mail aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />
         <input
           ref={inputRef}
           type="email"
+          aria-label="Email address"
+          tabIndex={showInput ? 0 : -1}
           value={email}
-          onChange={e => setEmail(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && submit()}
+          onChange={(e) => setEmail(e.target.value)}
           onBlur={() => {
-            if (email.trim() === "" && state === "expanded") {
-              setTimeout(() => setState("idle"), 100);
-            }
+            if (email.trim() === "" && state === "expanded") setTimeout(() => setState("idle"), 150);
           }}
           placeholder="your@email.com"
           disabled={state === "loading"}
           autoComplete="email"
           autoCapitalize="none"
           autoCorrect="off"
-          className="flex-1 bg-transparent text-base outline-none placeholder:text-foreground/30 min-w-0"
-          style={{ fontSize: "16px" }}
+          spellCheck={false}
+          className="min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground focus-visible:outline-none"
         />
         <button
-          type="button"
-          onClick={submit}
+          type="submit"
+          aria-label="Subscribe"
+          tabIndex={showInput ? 0 : -1}
           disabled={!isValidEmail || state === "loading"}
-          className="shrink-0 h-6 w-6 rounded-full bg-teal-500 hover:bg-teal-400 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-opacity"
+          className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {state === "loading"
-            ? <Loader2 className="h-3.5 w-3.5 text-white animate-spin" />
-            : <ArrowRight className="h-3.5 w-3.5 text-white" />}
+          {state === "loading" ? (
+            <Loader2 aria-hidden className="h-4 w-4 motion-safe:animate-spin" />
+          ) : (
+            <ArrowRight aria-hidden className="h-4 w-4" />
+          )}
         </button>
       </div>
 
-      <AnimatePresence mode="wait" initial={false}>
-        {state === "idle" && (
-          <motion.button
-            key="idle"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            type="button"
-            onTouchEnd={(e) => {
-              e.preventDefault();
-              expandAndFocus();
-            }}
-            onClick={expandAndFocus}
-            className="flex h-full w-full items-center justify-center gap-1.5 px-3 text-sm text-foreground/60 whitespace-nowrap cursor-pointer"
-          >
-            <Mail className="h-3.5 w-3.5 shrink-0" />
-            Subscribe
-          </motion.button>
-        )}
+      {state === "idle" && (
+        <button
+          ref={idleButtonRef}
+          type="button"
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            expand();
+          }}
+          onClick={expand}
+          className="flex h-full w-full cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 text-sm font-medium text-foreground motion-safe:animate-in motion-safe:fade-in-0"
+        >
+          <Mail aria-hidden className="h-4 w-4 shrink-0" />
+          Subscribe
+        </button>
+      )}
 
+      <p role="status" className={state === "success" || state === "error" ? "flex items-center gap-1.5 whitespace-nowrap px-4 text-sm motion-safe:animate-in motion-safe:fade-in-0" : "sr-only"}>
         {state === "success" && (
-          <motion.div
-            key="success"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="flex items-center gap-1.5 px-3 text-sm text-foreground/60 whitespace-nowrap"
-          >
-            <CheckCircle className="h-3.5 w-3.5 text-teal-500 shrink-0" />
-            Check your inbox
-          </motion.div>
+          <>
+            <CheckCircle aria-hidden className="h-4 w-4 shrink-0 text-link" />
+            <span className="text-foreground">Check your inbox</span>
+          </>
         )}
-
-        {state === "error" && (
-          <motion.div
-            key="error"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="flex items-center gap-1.5 px-3 text-sm text-red-400 whitespace-nowrap"
-          >
-            {errorMsg}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+        {state === "error" && <span className="text-destructive">Something went wrong. Try again</span>}
+      </p>
+    </form>
   );
 }

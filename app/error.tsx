@@ -15,10 +15,9 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
   }, [error]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center">
+    <main id="main" className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center">
       <h1
-        className="text-3xl font-bold text-foreground"
-        style={{ fontFamily: "var(--font-heading)" }}
+        className="font-heading text-3xl font-bold text-foreground"
       >
         Something went wrong
       </h1>
@@ -28,7 +27,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
       <button
         type="button"
         onClick={reset}
-        className="mt-6 cursor-pointer rounded-lg bg-primary/20 px-5 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/30"
+        className="mt-6 inline-flex min-h-11 cursor-pointer items-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
       >
         Try again
       </button>

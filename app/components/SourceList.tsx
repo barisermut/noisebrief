@@ -1,269 +1,173 @@
 "use client";
 
 import { useState, useMemo, useCallback, memo } from "react";
-import type { Source } from "@/types";
-import { motion } from "framer-motion";
-import { SourceFavicon } from "./SourceFavicon";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Search, X, ChevronLeft, ChevronRight } from "lucide-react";
+import type { Source } from "@/types";
+import { SourceFavicon } from "./SourceFavicon";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const DISPLAY_LIMIT = 5;
 const MODAL_PAGE_SIZE = 10;
 
 function timeAgo(iso: string): string {
   const d = new Date(iso);
-  const now = new Date();
-  const sec = Math.floor((now.getTime() - d.getTime()) / 1000);
+  const sec = Math.floor((Date.now() - d.getTime()) / 1000);
   if (sec < 60) return "just now";
   if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
   if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`;
   if (sec < 604800) return `${Math.floor(sec / 86400)}d ago`;
-  return d.toLocaleDateString();
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-const SourceItemRow = memo(function SourceItemRow({
-  source,
-  truncateTitle = false,
-}: {
-  source: Source;
-  truncateTitle?: boolean;
-}) {
+/** One source: title link (up to 2 lines) with source name and age underneath on phones, beside it on wider screens. */
+const SourceRow = memo(function SourceRow({ source }: { source: Source }) {
   return (
-    <>
-      <SourceFavicon
-        domain={source.domain}
-        sourceName={source.sourceName}
-        size={20}
-        className="h-5 w-5 shrink-0"
-      />
-      <a
-        href={source.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        title={source.title}
-        className={`min-w-0 flex-1 truncate overflow-hidden text-sm text-foreground underline decoration-primary/50 underline-offset-2 hover:text-primary cursor-pointer dark:text-zinc-300 ${truncateTitle ? "max-w-0 sm:max-w-none" : ""}`}
-      >
-        {source.title}
-      </a>
-      <span className="ml-2 flex shrink-0 text-right text-xs text-foreground/60 whitespace-nowrap dark:text-zinc-500 max-[375px]:hidden">
-        {source.sourceName} · {timeAgo(source.publishedAt)}
-      </span>
-    </>
-  );
-});
-
-function SourceItem({
-  source,
-  index,
-  animate = true,
-  summaryComplete = false,
-  staggerDelayMs = 80,
-}: {
-  source: Source;
-  index: number;
-  animate?: boolean;
-  summaryComplete?: boolean;
-  staggerDelayMs?: number;
-}) {
-  const className =
-    "flex min-w-0 items-center gap-2 rounded-lg border border-black/8 dark:border-white/8 bg-black/3 dark:bg-white/4 px-3 py-2 transition-colors hover:bg-black/5 dark:hover:bg-white/5 sm:gap-3";
-  if (animate) {
-    return (
-      <motion.li
-        layout={false}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{
-          opacity: summaryComplete ? 1 : 0,
-          y: summaryComplete ? 0 : 8,
-        }}
-        transition={{ delay: index * (staggerDelayMs / 1000), duration: 0.25 }}
-        viewport={{ once: true }}
-        style={{ willChange: "transform" }}
-        className={className}
-      >
-        <SourceItemRow source={source} truncateTitle={false} />
-      </motion.li>
-    );
-  }
-  return (
-    <li className={className}>
-      <SourceItemRow source={source} truncateTitle />
+    <li className="flex min-w-0 items-start gap-3 rounded-lg border border-border bg-card/60 px-3 py-2.5 transition-colors hover:bg-card sm:items-center">
+      <SourceFavicon domain={source.domain} sourceName={source.sourceName} size={20} className="mt-0.5 h-5 w-5 sm:mt-0" />
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
+        <a
+          href={source.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="line-clamp-2 min-w-0 flex-1 text-sm text-foreground underline decoration-link/40 underline-offset-2 hover:text-link-hover hover:decoration-link-hover sm:line-clamp-1"
+        >
+          {source.title}
+          <span className="sr-only"> (opens in a new tab)</span>
+        </a>
+        <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+          {source.sourceName} · <time dateTime={source.publishedAt}>{timeAgo(source.publishedAt)}</time>
+        </span>
+      </div>
     </li>
   );
-}
+});
 
 interface SourceListProps {
   sources: Source[];
   briefDate: string | null;
-  summaryComplete?: boolean;
-  /** When true, source items render visible immediately (no stagger animation). */
-  isHistorical?: boolean;
-  /** When provided, dialog open state is controlled by parent (e.g. to hide floating CTA). */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
-export function SourceList({ sources, briefDate, summaryComplete = false, isHistorical = false, open: controlledOpen, onOpenChange }: SourceListProps) {
+export function SourceList({ sources, briefDate, open: controlledOpen, onOpenChange }: SourceListProps) {
   const [internalOpen, setInternalOpen] = useState(false);
-  const isControlled = controlledOpen !== undefined;
-  const open = isControlled ? controlledOpen : internalOpen;
-  const setOpen = useCallback(
-    (value: boolean) => {
-      if (onOpenChange) onOpenChange(value);
-      if (!isControlled) setInternalOpen(value);
-    },
-    [onOpenChange, isControlled]
-  );
+  const open = controlledOpen ?? internalOpen;
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  const displaySources = sources.slice(0, DISPLAY_LIMIT);
-  const hasMore = sources.length > DISPLAY_LIMIT;
-
   const filtered = useMemo(() => {
-    if (!search.trim()) return sources;
     const q = search.trim().toLowerCase();
-    return sources.filter(
-      (s) =>
-        s.title.toLowerCase().includes(q) ||
-        s.sourceName.toLowerCase().includes(q)
-    );
+    if (!q) return sources;
+    return sources.filter((s) => s.title.toLowerCase().includes(q) || s.sourceName.toLowerCase().includes(q));
   }, [sources, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / MODAL_PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-  const paginated = useMemo(() => {
-    const start = (currentPage - 1) * MODAL_PAGE_SIZE;
-    return filtered.slice(start, start + MODAL_PAGE_SIZE);
-  }, [filtered, currentPage]);
+  const paginated = filtered.slice((currentPage - 1) * MODAL_PAGE_SIZE, currentPage * MODAL_PAGE_SIZE);
 
   const modalDate = briefDate
-    ? new Date(briefDate).toLocaleDateString("en-US", {
+    ? new Date(briefDate + "T12:00:00Z").toLocaleDateString("en-US", {
         weekday: "long",
         year: "numeric",
         month: "long",
         day: "numeric",
+        timeZone: "UTC",
       })
-    : "";
+    : "All sources";
 
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
     setPage(1);
   }, []);
 
-  const handleOpenChange = useCallback((next: boolean) => {
-    setOpen(next);
-    if (!next) {
-      setSearch("");
-      setPage(1);
-    }
-  }, [setOpen]);
+  const handleOpenChange = useCallback(
+    (next: boolean) => {
+      onOpenChange?.(next);
+      if (controlledOpen === undefined) setInternalOpen(next);
+      if (!next) {
+        setSearch("");
+        setPage(1);
+      }
+    },
+    [onOpenChange, controlledOpen]
+  );
+
+  const pagerButton =
+    "inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1 rounded-md border border-border bg-secondary px-3 py-1.5 text-sm text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50";
 
   return (
     <>
       <ul className="space-y-2">
-        {displaySources.map((s, i) => (
-          <SourceItem
-            key={`${s.url}-${s.publishedAt}-${i}`}
-            source={s}
-            index={i}
-            animate={!isHistorical}
-            summaryComplete={summaryComplete}
-            staggerDelayMs={80}
-          />
+        {sources.slice(0, DISPLAY_LIMIT).map((s, i) => (
+          <SourceRow key={`${s.url}-${i}`} source={s} />
         ))}
       </ul>
-      {hasMore && (
+      {sources.length > DISPLAY_LIMIT && (
         <Dialog open={open} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
             <button
               type="button"
-              className="mt-3 min-h-[44px] min-w-[44px] cursor-pointer rounded text-sm font-medium text-primary hover:underline sm:min-w-0 sm:px-1"
+              className="mt-3 inline-flex min-h-11 cursor-pointer items-center rounded-md px-1 text-sm font-medium text-link underline-offset-2 hover:text-link-hover hover:underline"
             >
-              View all sources →
+              View all {sources.length} sources →
             </button>
           </DialogTrigger>
           <DialogContent
             onOpenAutoFocus={(e) => e.preventDefault()}
-            className="sources-modal-content max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:z-50 max-sm:mx-0 max-sm:flex max-sm:w-full max-sm:max-w-none max-sm:flex-col max-sm:translate-x-0 max-sm:translate-y-0 max-sm:gap-0 max-sm:overflow-hidden max-sm:rounded-t-xl max-sm:border-t max-sm:border-zinc-200 max-sm:bg-white max-sm:p-4 max-sm:text-[#1a1a1a] dark:max-sm:border-zinc-800 dark:max-sm:bg-[#13131a] dark:max-sm:text-zinc-200 sm:mx-4 sm:max-w-2xl sm:max-h-[90vh] sm:flex sm:flex-col sm:gap-0 sm:overflow-y-auto sm:overflow-hidden sm:rounded-lg sm:border sm:border-zinc-200 sm:p-6 sm:bg-white sm:text-[#1a1a1a] dark:sm:border-zinc-800 dark:sm:bg-[#13131a] dark:sm:text-zinc-200"
+            className="sources-modal-content bg-card text-card-foreground max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:mx-0 max-sm:flex max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:flex-col max-sm:gap-0 max-sm:overflow-hidden max-sm:rounded-t-xl max-sm:p-4 sm:mx-4 sm:flex sm:max-h-[90vh] sm:max-w-2xl sm:flex-col sm:gap-0 sm:overflow-hidden sm:rounded-lg sm:p-6"
           >
             <DialogHeader className="shrink-0">
-              <DialogTitle className="pr-8 text-lg font-semibold text-[#1a1a1a] sm:pr-0 dark:text-white">
-                {modalDate}
-              </DialogTitle>
+              <DialogTitle className="pr-10 text-lg font-semibold sm:pr-0">{modalDate}</DialogTitle>
+              <DialogDescription className="sr-only">All sources used for this brief, with search.</DialogDescription>
             </DialogHeader>
             <div className="mt-4 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               <div className="relative min-w-0 shrink-0">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 shrink-0 -translate-y-1/2 text-[#6b6b6b] dark:text-zinc-500" />
+                <Search aria-hidden className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
-                  type="text"
+                  type="search"
+                  aria-label="Search sources"
                   placeholder="Search sources..."
                   value={search}
                   onChange={(e) => handleSearchChange(e.target.value)}
-                  autoFocus={false}
-                  className="w-full min-w-0 rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 py-2.5 pl-9 pr-10 text-sm text-foreground placeholder:text-foreground/60 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/50 dark:text-zinc-200 dark:placeholder:text-zinc-500"
+                  className="w-full min-w-0 rounded-lg border border-input bg-background py-2.5 pl-9 pr-10 text-base text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none sm:text-sm [&::-webkit-search-cancel-button]:hidden"
                 />
                 {search && (
                   <button
                     type="button"
                     onClick={() => handleSearchChange("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded p-1 text-[#6b6b6b] hover:text-[#1a1a1a] dark:text-zinc-500 dark:hover:text-zinc-300"
+                    className="absolute right-1 top-1/2 inline-flex min-h-9 min-w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded text-muted-foreground hover:text-foreground"
                     aria-label="Clear search"
                   >
-                    <X className="h-4 w-4" />
+                    <X aria-hidden className="h-4 w-4" />
                   </button>
                 )}
               </div>
-              <ul
-                className="mt-2 min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden pr-1"
-                style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}
-              >
+              <ul className="mt-2 min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden pr-1">
                 {paginated.map((s, i) => (
-                  <li
-                    key={`${s.url}-${s.publishedAt}-${i}`}
-                    className="flex min-w-0 items-center gap-2 overflow-hidden rounded-lg border border-black/8 dark:border-white/8 bg-black/3 dark:bg-white/4 px-3 py-2 transition-colors hover:bg-black/5 dark:hover:bg-white/5 sm:gap-3"
-                  >
-                    <SourceItemRow source={s} truncateTitle={false} />
-                  </li>
+                  <SourceRow key={`${s.url}-${i}`} source={s} />
                 ))}
+                {paginated.length === 0 && <li className="py-6 text-center text-sm text-muted-foreground">No sources match.</li>}
               </ul>
               <div
-                className="flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-2 border-t border-black/8 dark:border-white/5"
-                style={{
-                  position: "sticky",
-                  bottom: 0,
-                  backgroundColor: "var(--card)",
-                  paddingBottom: "max(env(safe-area-inset-bottom), 12px)",
-                  paddingTop: "12px",
-                }}
+                className="sticky bottom-0 flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border bg-card pt-3"
+                style={{ paddingBottom: "max(env(safe-area-inset-bottom), 12px)" }}
               >
-                <span className="shrink-0 text-xs text-foreground/60 dark:text-zinc-500">
+                <span className="shrink-0 text-xs text-muted-foreground" aria-live="polite">
                   Page {currentPage} of {totalPages}
                 </span>
                 <div className="flex shrink-0 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage <= 1}
-                    className="inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-1 rounded border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 py-1.5 text-sm text-foreground hover:bg-black/10 dark:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none dark:text-zinc-300"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
+                  <button type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={currentPage <= 1} className={pagerButton}>
+                    <ChevronLeft aria-hidden className="h-4 w-4" />
                     Previous
                   </button>
                   <button
                     type="button"
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage >= totalPages}
-                    className="inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-1 rounded border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 py-1.5 text-sm text-foreground hover:bg-black/10 dark:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none dark:text-zinc-300"
+                    className={pagerButton}
                   >
                     Next
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight aria-hidden className="h-4 w-4" />
                   </button>
                 </div>
               </div>

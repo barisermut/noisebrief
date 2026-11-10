@@ -4,52 +4,47 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Design tokens. Every text/background pair meets WCAG AA (4.5:1) in both themes:
+ *   foreground / background        light 16.4:1   dark 15.6:1
+ *   muted-foreground / background  light  5.4:1   dark  7.1:1
+ *   link / background              light  5.1:1   dark 10.6:1
+ *   primary-foreground / primary   10.3:1 (dark text on brand teal, both themes)
+ * Brand teal (#00d4aa) is for fills, the logo and accents, never for small text on light.
+ */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Syne", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font-heading: "Syne", sans-serif;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-link: var(--link);
+  --color-link-hover: var(--link-hover);
+  --color-brand: #00d4aa;
+  --font-sans: var(--font-syne), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-heading: var(--font-syne), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
 }
 
-/* Light theme (default when .dark is not on html) */
 :root {
+  color-scheme: light;
   --radius: 0.625rem;
   --background: #f8f8f5;
   --foreground: #1a1a1a;
@@ -59,33 +54,22 @@
   --popover-foreground: #1a1a1a;
   --primary: #00d4aa;
   --primary-foreground: #0a0a0f;
-  --secondary: #f4f4f0;
+  --secondary: #efefea;
   --secondary-foreground: #1a1a1a;
-  --muted: #f4f4f0;
-  --muted-foreground: #6b6b6b;
-  --accent: #00d4aa;
+  --muted: #efefea;
+  --muted-foreground: #66665f;
+  --accent: #e6f8f3;
   --accent-foreground: #0a0a0f;
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: #e4e4e2;
-  --input: #e4e4e2;
-  --ring: #00d4aa;
-  --chart-1: #00d4aa;
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: #ffffff;
-  --sidebar-foreground: #1a1a1a;
-  --sidebar-primary: #00d4aa;
-  --sidebar-primary-foreground: #0a0a0f;
-  --sidebar-accent: #f4f4f0;
-  --sidebar-accent-foreground: #1a1a1a;
-  --sidebar-border: #e4e4e2;
-  --sidebar-ring: #00d4aa;
+  --destructive: #c81e1e;
+  --border: #e2e2dd;
+  --input: #d6d6d0;
+  --ring: #0f766e;
+  --link: #0f766e;
+  --link-hover: #0a5c56;
 }
 
-/* Dark theme (when .dark is on html) */
 .dark {
+  color-scheme: dark;
   --background: #0a0a0f;
   --foreground: #e4e4e7;
   --card: #13131a;
@@ -94,76 +78,59 @@
   --popover-foreground: #e4e4e7;
   --primary: #00d4aa;
   --primary-foreground: #0a0a0f;
-  --secondary: #27272a;
+  --secondary: #1d1d26;
   --secondary-foreground: #e4e4e7;
-  --muted: #27272a;
-  --muted-foreground: #71717a;
-  --accent: #00d4aa;
-  --accent-foreground: #0a0a0f;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.1);
+  --muted: #1d1d26;
+  --muted-foreground: #9a9aa3;
+  --accent: #0f2a26;
+  --accent-foreground: #e4e4e7;
+  --destructive: #f87171;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.16);
   --ring: #00d4aa;
-  --sidebar: #13131a;
-  --sidebar-foreground: #e4e4e7;
-  --sidebar-primary: #00d4aa;
-  --sidebar-primary-foreground: #0a0a0f;
-  --sidebar-accent: #27272a;
-  --sidebar-accent-foreground: #e4e4e7;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #00d4aa;
+  --link: #2dd4bf;
+  --link-hover: #5eead4;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
   }
   body {
     @apply bg-background text-foreground;
-    max-width: 100vw;
-    -webkit-overflow-scrolling: touch;
+  }
+  /* One visible focus style for every interactive element (keyboard users only). */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--primary) 35%, transparent);
   }
 }
 
-/* Subscribe pill: expand leftward on mobile (max 16rem desktop, full width minus padding on small screens) */
-.expanded-pill {
-  max-width: min(16rem, calc(100vw - 2rem));
-}
-
-/* Section reveal: opacity-only transition (compositor-only, no Framer observers during scroll) */
-.section-reveal {
-  opacity: 0;
-  transition: opacity 0.3s ease-out;
-}
-.section-reveal.section-reveal-visible {
-  opacity: 1;
-}
-
-/* MAKE IT YOURS — disabled (tone result card + skeleton animations)
-.post-card-enter { ... }
-.post-card-skeleton-line { ... }
-*/
-
-/* Cursor blink: CSS-only so it doesn't fight scroll on iOS */
-.cursor-blink {
-  animation: blink 1s step-end infinite;
-}
-@keyframes blink {
-  0%,
-  100% {
-    opacity: 1;
+/* Skeleton shimmer; respects reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton {
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
   }
+}
+@keyframes skeleton-pulse {
   50% {
-    opacity: 0;
+    opacity: 0.45;
   }
 }
 
-/* Sources modal: iOS safe area so pagination isn't hidden behind browser bar */
+/* Sources modal: iOS safe area so pagination isn't hidden behind the browser bar */
 .sources-modal-content {
   height: calc(85vh - env(safe-area-inset-bottom));
   max-height: calc(85vh - env(safe-area-inset-bottom));
   padding-bottom: max(env(safe-area-inset-bottom), 16px);
 }
-/* Desktop: constrain modal height and reset safe-area padding */
 @media (min-width: 640px) {
   .sources-modal-content {
     height: auto;
@@ -172,7 +139,7 @@
   }
 }
 
-/* Noise/grain overlay */
+/* Subtle grain texture behind the content */
 .noise-overlay::before {
   content: "";
   position: fixed;
@@ -180,8 +147,4 @@
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
   pointer-events: none;
   z-index: 1;
-  will-change: transform;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
 }

@@ -1,5 +1,3 @@
-"use client";
-
 import { memo } from "react";
 import type { BriefParagraph } from "@/types/brief";
 
@@ -36,9 +34,10 @@ function ParagraphWithKeywordComponent({ paragraph }: ParagraphWithKeywordProps)
         href={k.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-teal-600 dark:text-teal-400 underline underline-offset-2 decoration-teal-600/40 dark:decoration-teal-400/40 hover:decoration-teal-600 dark:hover:decoration-teal-400 transition-colors"
+        className="text-link underline decoration-link/40 underline-offset-2 transition-colors hover:text-link-hover hover:decoration-link-hover"
       >
         {text.slice(k.idx, k.idx + k.keyword.length)}
+        <span className="sr-only"> (opens in a new tab)</span>
       </a>
     );
     cursor = k.idx + k.keyword.length;

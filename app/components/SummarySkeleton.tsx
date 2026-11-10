@@ -1,53 +1,16 @@
-"use client";
+const LINES = ["w-full", "w-full", "w-[85%]", "spacer", "w-full", "w-full", "w-[70%]"];
 
-import { motion } from "framer-motion";
-
+/** Placeholder while another date's brief loads. CSS-only pulse; respects reduced motion. */
 export function SummarySkeleton() {
   return (
-    <div className="space-y-4">
-      <motion.div
-        layout={false}
-        animate={{ opacity: [0.4, 0.8, 0.4] }}
-        transition={{ duration: 1.5, repeat: Infinity }}
-        style={{ willChange: "opacity" }}
-        className="h-4 w-full rounded bg-zinc-200 dark:bg-zinc-700/50"
-      />
-      <motion.div
-        layout={false}
-        animate={{ opacity: [0.4, 0.8, 0.4] }}
-        transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
-        style={{ willChange: "opacity" }}
-        className="h-4 w-full rounded bg-zinc-200 dark:bg-zinc-700/50"
-      />
-      <motion.div
-        layout={false}
-        animate={{ opacity: [0.4, 0.8, 0.4] }}
-        transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
-        style={{ willChange: "opacity" }}
-        className="h-4 w-[85%] rounded bg-zinc-200 dark:bg-zinc-700/50"
-      />
-      <div className="pt-2" />
-      <motion.div
-        layout={false}
-        animate={{ opacity: [0.4, 0.8, 0.4] }}
-        transition={{ duration: 1.5, repeat: Infinity, delay: 0.1 }}
-        style={{ willChange: "opacity" }}
-        className="h-4 w-full rounded bg-zinc-200 dark:bg-zinc-700/50"
-      />
-      <motion.div
-        layout={false}
-        animate={{ opacity: [0.4, 0.8, 0.4] }}
-        transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
-        style={{ willChange: "opacity" }}
-        className="h-4 w-full rounded bg-zinc-200 dark:bg-zinc-700/50"
-      />
-      <motion.div
-        layout={false}
-        animate={{ opacity: [0.4, 0.8, 0.4] }}
-        transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
-        style={{ willChange: "opacity" }}
-        className="h-4 w-[70%] rounded bg-zinc-200 dark:bg-zinc-700/50"
-      />
+    <div className="space-y-4" role="status" aria-label="Loading brief">
+      {LINES.map((w, i) =>
+        w === "spacer" ? (
+          <div key={i} className="pt-2" />
+        ) : (
+          <div key={i} className={`skeleton h-4 rounded bg-muted ${w}`} style={{ animationDelay: `${(i % 3) * 0.2}s` }} />
+        )
+      )}
     </div>
   );
 }

@@ -19,7 +19,6 @@ function limiter(requests: number, window: Duration, prefix: string): Ratelimit 
   });
 }
 
-export const ratelimiter = limiter(10, "1 m", "favicon");
 export const subscribeRatelimiter = limiter(3, "1 h", "subscribe");
 export const unsubscribeRatelimiter = limiter(50, "1 m", "unsubscribe");
 

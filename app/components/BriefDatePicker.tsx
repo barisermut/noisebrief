@@ -25,34 +25,41 @@ function dateToYYYYMMDD(d: Date): string {
 }
 
 const calendarClassNames = {
-  root: "p-3 text-zinc-700 dark:text-white/80",
+  root: "p-3 text-foreground",
   month: "space-y-3",
   month_caption: "flex items-center justify-between px-1",
-  caption_label: "text-sm font-medium text-zinc-800 dark:text-white/80",
+  caption_label: "text-sm font-medium text-foreground",
   nav: "flex items-center gap-1",
   button_previous:
-    "inline-flex min-h-[36px] min-w-[36px] cursor-pointer items-center justify-center rounded text-zinc-500 transition-colors hover:text-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/50 dark:text-teal-400 dark:hover:text-teal-300 [&_svg]:fill-zinc-500 [&_svg]:hover:fill-zinc-900 dark:[&_svg]:!fill-teal-400 dark:[&_svg]:hover:!fill-teal-300",
+    "inline-flex min-h-9 min-w-9 cursor-pointer items-center justify-center rounded-md text-link transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:fill-current",
   button_next:
-    "inline-flex min-h-[36px] min-w-[36px] cursor-pointer items-center justify-center rounded text-zinc-500 transition-colors hover:text-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/50 dark:text-teal-400 dark:hover:text-teal-300 [&_svg]:fill-zinc-500 [&_svg]:hover:fill-zinc-900 dark:[&_svg]:!fill-teal-400 dark:[&_svg]:hover:!fill-teal-300",
-  chevron: "h-4 w-4 shrink-0 fill-zinc-500 dark:!fill-teal-400",
+    "inline-flex min-h-9 min-w-9 cursor-pointer items-center justify-center rounded-md text-link transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:fill-current",
+  chevron: "h-4 w-4 shrink-0 fill-current",
   weekdays: "flex",
-  weekday: "w-9 text-center text-xs font-medium text-zinc-500 dark:text-white/50",
+  weekday: "w-9 text-center text-xs font-medium text-muted-foreground",
   weeks: "flex flex-col gap-1",
   week: "flex w-full",
   day: "h-9 w-9 text-center text-sm",
   day_button:
-    "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/50 disabled:cursor-not-allowed disabled:opacity-100 dark:hover:bg-white/10",
+    "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:hover:bg-transparent",
   month_grid: "w-full border-collapse",
 };
 
+/** Starts with the visible day number so voice-control users can say "click 9". */
+const calendarLabels = {
+  labelDayButton: (date: Date, modifiers: { selected?: boolean; disabled?: boolean }) =>
+    `${date.getDate()} ${date.toLocaleDateString("en-US", { weekday: "long", month: "long", year: "numeric" })}` +
+    (modifiers.selected ? ", selected" : modifiers.disabled ? ", no brief" : ""),
+};
+
 const calendarModifiersClassNames = {
-  disabled: "text-zinc-300 cursor-not-allowed dark:text-white/20",
+  disabled: "text-muted-foreground/50",
   selected:
-    "rounded-md bg-teal-500 text-white hover:bg-teal-500 hover:text-white",
+    "rounded-md bg-primary font-semibold text-primary-foreground [&_button]:hover:bg-primary",
   today: "",
   today_available:
-    "relative after:absolute after:bottom-0.5 after:left-1/2 after:h-1 after:w-1 after:-translate-x-1/2 after:rounded-full after:bg-teal-500 after:content-['']",
-  outside: "text-zinc-400 dark:text-white/30",
+    "relative after:absolute after:bottom-0.5 after:left-1/2 after:h-1 after:w-1 after:-translate-x-1/2 after:rounded-full after:bg-link after:content-['']",
+  outside: "opacity-50",
 };
 
 interface BriefDatePickerProps {
@@ -60,7 +67,6 @@ interface BriefDatePickerProps {
   isHistorical: boolean;
   onSelectDate: (date: string) => void;
   dates: string[];
-  loadingDates: boolean;
   /** When provided, picker is controlled; parent can hide floating CTA when open. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -69,13 +75,11 @@ interface BriefDatePickerProps {
 function CalendarPanel({
   selectedDate,
   availableDates,
-  loadingDates,
   onSelectDate,
   onClose,
 }: {
   selectedDate: string;
   availableDates: string[];
-  loadingDates: boolean;
   onSelectDate: (date: string) => void;
   onClose: () => void;
 }) {
@@ -119,17 +123,9 @@ function CalendarPanel({
     [availableSet, todayStr]
   );
 
-  if (loadingDates) {
-    return (
-      <div className="flex min-h-[280px] items-center justify-center p-6 text-sm text-zinc-500 dark:text-white/60">
-        Loading dates…
-      </div>
-    );
-  }
-
   if (availableDates.length === 0) {
     return (
-      <div className="flex min-h-[280px] items-center justify-center p-6 text-sm text-zinc-500 dark:text-white/60">
+      <div className="flex min-h-[280px] items-center justify-center p-6 text-sm text-muted-foreground">
         No other dates yet
       </div>
     );
@@ -145,6 +141,7 @@ function CalendarPanel({
       classNames={calendarClassNames}
       modifiersClassNames={calendarModifiersClassNames}
       modifiers={modifiers}
+      labels={calendarLabels}
       aria-label="Available brief dates"
       showOutsideDays
     />
@@ -186,16 +183,17 @@ function MobileBottomSheet({
         ref={sheetRef}
         role="dialog"
         aria-label="Choose a date for past brief"
-        className="absolute inset-x-0 bottom-0 z-50 rounded-t-xl border-t border-zinc-200 bg-white p-4 dark:border-white/8 dark:bg-[#0f0f17]"
+        aria-modal="true"
+        className="absolute inset-x-0 bottom-0 z-50 rounded-t-xl border-t border-border bg-popover p-4 text-popover-foreground"
         style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/50"
+          className="absolute right-4 top-4 flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
           aria-label="Close"
         >
-          <X className="h-4 w-4 text-zinc-500 dark:text-white/60" />
+          <X aria-hidden className="h-4 w-4" />
         </button>
         <div className="flex flex-col items-center overflow-hidden">
           {children}
@@ -210,7 +208,6 @@ export function BriefDatePicker({
   isHistorical,
   onSelectDate,
   dates,
-  loadingDates,
   open: controlledOpen,
   onOpenChange,
 }: BriefDatePickerProps) {
@@ -243,6 +240,17 @@ export function BriefDatePicker({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open, isMobile, setOpen]);
 
+  useEffect(() => {
+    if (!open) return;
+    function handleKey(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      setOpen(false);
+      buttonRef.current?.focus();
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [open, setOpen]);
+
   const handleSelect = useCallback(
     (date: string) => {
       onSelectDate(date);
@@ -261,7 +269,6 @@ export function BriefDatePicker({
     <CalendarPanel
       selectedDate={selectedDate}
       availableDates={dates}
-      loadingDates={loadingDates}
       onSelectDate={handleSelect}
       onClose={() => setOpen(false)}
     />
@@ -269,31 +276,29 @@ export function BriefDatePicker({
 
   return (
     <div className="relative flex min-w-0 items-center gap-1 sm:gap-2">
-      <span className="select-none text-[#1a1a1a]/20 dark:text-white/20" aria-hidden>
+      <span className="select-none text-border" aria-hidden>
         |
       </span>
       <button
         ref={buttonRef}
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex min-h-[44px] min-w-[44px] cursor-pointer items-center gap-1.5 px-2 py-2 text-xs text-[#6b6b6b] transition-colors hover:text-[#1a1a1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d4aa]/50 dark:text-white/40 dark:hover:text-white/70 sm:min-w-0 sm:px-2"
+        className="flex min-h-11 cursor-pointer items-center gap-1.5 rounded-md px-2 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
         aria-expanded={open}
         aria-haspopup="dialog"
-        aria-label="Choose another date"
       >
         <Calendar className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        <span>past briefs</span>
+        <span>Past briefs</span>
       </button>
       {isHistorical && (
         <>
-          <span className="select-none text-[#1a1a1a]/20 dark:text-white/20" aria-hidden>
+          <span className="select-none text-border" aria-hidden>
             |
           </span>
           <button
             type="button"
             onClick={goToToday}
-            className="min-h-[44px] min-w-[44px] cursor-pointer px-2 py-2 text-left text-xs text-[#6b6b6b] transition-colors hover:text-teal-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d4aa]/50 dark:text-white/40 sm:min-w-0 sm:px-2"
-            aria-label="Back to today's brief"
+            className="min-h-11 cursor-pointer rounded-md px-2 py-2 text-left text-sm text-link transition-colors hover:text-link-hover hover:underline"
           >
             Back to today
           </button>
@@ -306,7 +311,7 @@ export function BriefDatePicker({
           ref={panelRef}
           role="dialog"
           aria-label="Available brief dates"
-          className="absolute left-0 top-full z-50 mt-1 w-[280px] rounded-md border border-zinc-200 bg-white shadow-xl dark:border-white/8 dark:bg-[#0f0f17]"
+          className="absolute left-0 top-full z-50 mt-1 w-[280px] rounded-md border border-border bg-popover text-popover-foreground shadow-xl"
         >
           {calendarPanel}
         </div>

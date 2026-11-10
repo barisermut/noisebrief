@@ -12,7 +12,8 @@ async function main() {
 
   const svg = fs.readFileSync(svgPath, "utf8");
 
-  const sizes = [16, 32, 48, 64, 128, 256];
+  // Browsers only use small sizes from .ico; larger icons come from favicon.svg / apple-touch-icon.png.
+  const sizes = [16, 32, 48];
   const pngBuffers = sizes.map((size) => {
     const resvg = new Resvg(svg, { fitTo: { mode: "width", value: size } });
     return resvg.render().asPng();

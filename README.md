@@ -22,12 +22,12 @@ Today's tech noise. Briefly.
 |-----------------|----------------------------------------------|
 | Next.js 16      | App Router, API routes, cron, OG image       |
 | TypeScript      | Strict typing across app and API             |
-| Tailwind CSS v4 | Styling; Syne font, dark/light theme         |
+| Tailwind CSS v4 | Styling; design tokens in `app/globals.css`, Syne via next/font, dark/light theme |
 | Supabase        | Postgres for briefs, subscribers, cache      |
 | Anthropic Claude API | Daily summary (Haiku 5.5, structured outputs) |
 | Resend          | Welcome and digest emails                    |
 | Vercel          | Hosting and cron (daily 8AM UTC)             |
-| Upstash Redis   | Rate limiting (subscribe, confirm, unsubscribe, favicon) |
+| Upstash Redis   | Rate limiting (subscribe, confirm, unsubscribe) |
 
 ---
 

@@ -1,29 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 
-const SOURCE_COLORS: Record<string, string> = {
-  "Hacker News": "rgb(255, 102, 0)", // orange
-  TechCrunch: "rgb(0, 170, 90)", // green
-  "The Verge": "rgb(170, 0, 255)", // purple
-  Wired: "rgb(100, 100, 100)", // gray
+/** Icons for the feeds the daily cron reads, shipped as static files in /public/source-icons. */
+const ICON_BY_DOMAIN: Record<string, string> = {
+  "hnrss.org": "news.ycombinator.com",
+  "news.ycombinator.com": "news.ycombinator.com",
+  "techcrunch.com": "techcrunch.com",
+  "feeds.feedburner.com": "techcrunch.com",
+  "theverge.com": "theverge.com",
+  "wired.com": "wired.com",
+  "reddit.com": "reddit.com",
 };
-const REDDIT_SOURCES = [
-  "r/technology",
-  "r/artificial",
-  "r/singularity",
-  "r/tech",
-  "r/MachineLearning",
-  "r/ProductManagement",
-];
-const DEFAULT_COLOR = "rgb(0, 212, 170)"; // teal
 
-function getFallbackColor(sourceName: string): string {
-  if (SOURCE_COLORS[sourceName]) return SOURCE_COLORS[sourceName];
-  if (REDDIT_SOURCES.some((r) => sourceName === r)) return "rgb(255, 69, 0)"; // red
-  return DEFAULT_COLOR;
-}
+const FALLBACK_COLORS: Record<string, string> = {
+  "Hacker News": "#c2410c",
+  TechCrunch: "#047857",
+  "The Verge": "#7e22ce",
+  Wired: "#3f3f46",
+};
 
 interface SourceFaviconProps {
   domain: string;
@@ -32,42 +27,34 @@ interface SourceFaviconProps {
   className?: string;
 }
 
-export function SourceFavicon({
-  domain,
-  sourceName,
-  size = 20,
-  className = "",
-}: SourceFaviconProps) {
+export function SourceFavicon({ domain, sourceName, size = 20, className = "" }: SourceFaviconProps) {
   const [failed, setFailed] = useState(false);
-  const letter = sourceName.charAt(0).toUpperCase();
-  const bgColor = getFallbackColor(sourceName);
+  const icon = ICON_BY_DOMAIN[domain.replace(/^www\./, "")];
 
-  if (failed) {
+  if (!icon || failed) {
+    const bg = FALLBACK_COLORS[sourceName] ?? (sourceName.startsWith("r/") ? "#c2410c" : "#0f766e");
     return (
       <span
-        className={`flex shrink-0 items-center justify-center rounded font-semibold text-white ${className}`}
-        style={{
-          width: size,
-          height: size,
-          backgroundColor: bgColor,
-          fontSize: Math.max(8, size * 0.55),
-        }}
         aria-hidden
+        className={`flex shrink-0 items-center justify-center rounded font-semibold text-white ${className}`}
+        style={{ width: size, height: size, backgroundColor: bg, fontSize: Math.max(8, size * 0.55) }}
       >
-        {letter}
+        {sourceName.charAt(0).toUpperCase()}
       </span>
     );
   }
 
   return (
-    <Image
-      src={`/api/favicon?domain=${encodeURIComponent(domain)}`}
+    // Plain <img>: tiny static file, no optimizer round-trip needed.
+    <img
+      src={`/source-icons/${icon}.png`}
       alt=""
       width={size}
       height={size}
+      loading="lazy"
+      decoding="async"
       className={`shrink-0 rounded ${className}`}
       onError={() => setFailed(true)}
-      unoptimized
     />
   );
 }

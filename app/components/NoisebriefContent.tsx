@@ -1,49 +1,21 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useState, useEffect, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { normalizeParagraphs } from "@/types/brief";
 import type { BriefData } from "@/lib/brief-row";
 import { getTodayDateString } from "@/lib/date";
-import { AnimatedParagraphs } from "./AnimatedParagraphs";
+import { BriefParagraphs } from "./BriefParagraphs";
 import { SummarySkeleton } from "./SummarySkeleton";
 import { SourceList } from "./SourceList";
 import { BriefDatePicker } from "./BriefDatePicker";
 import { ThemeToggle } from "./ThemeToggle";
 import { SubscribePill } from "./SubscribePill";
+import { Logo } from "./Logo";
 
-/** Date of the latest brief already shown this session, so the reveal animation plays once. */
-const SEEN_STORAGE_KEY = "noisebrief_seen_date";
-
-function readSeenDate(): string | null {
-  try {
-    return sessionStorage.getItem(SEEN_STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function writeSeenDate(date: string) {
-  try {
-    sessionStorage.setItem(SEEN_STORAGE_KEY, date);
-  } catch {
-    // storage unavailable (private mode etc.)
-  }
-}
-
-function formatBriefDateLabel(dateStr: string): string {
-  return new Date(dateStr + "T12:00:00Z")
-    .toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" })
-    .toUpperCase();
-}
-
-function formatBadgeDate(dateStr: string): string {
-  return new Date(dateStr + "T12:00:00Z").toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
+function formatDate(dateStr: string, options: Intl.DateTimeFormatOptions): string {
+  return new Date(dateStr + "T12:00:00Z").toLocaleDateString("en-US", { ...options, timeZone: "UTC" });
 }
 
 interface NoisebriefContentProps {
@@ -59,35 +31,19 @@ export function NoisebriefContent({ brief, dates }: NoisebriefContentProps) {
 
   const briefDate = brief?.date ?? null;
   const latestDate = dates[0] ?? briefDate;
-  const isHistorical = !!brief?.date && brief.date !== latestDate;
+  const isHistorical = !!briefDate && briefDate !== latestDate;
   const paragraphs = normalizeParagraphs(brief?.paragraphs ?? []);
 
-  const [revealDone, setRevealDone] = useState(isHistorical);
-  const [skipAnimation, setSkipAnimation] = useState(isHistorical);
   const [scrolled, setScrolled] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [subscribeExpanded, setSubscribeExpanded] = useState(false);
-
-  // sessionStorage is only readable after hydration; run before paint to avoid replaying the reveal.
-  useLayoutEffect(() => {
-    if (!isHistorical && briefDate && readSeenDate() === briefDate) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from browser storage
-      setSkipAnimation(true);
-      setRevealDone(true);
-    }
-  }, [isHistorical, briefDate]);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
   }, []);
-
-  const handleRevealComplete = useCallback(() => {
-    setRevealDone(true);
-    if (briefDate) writeSeenDate(briefDate);
-  }, [briefDate]);
 
   const navigateToDate = useCallback(
     (date: string) => {
@@ -102,127 +58,109 @@ export function NoisebriefContent({ brief, dates }: NoisebriefContentProps) {
 
   return (
     <div className="flex min-h-full min-w-0 flex-col">
-      <main className="flex-1 min-w-0">
-        <header
-          className={`sticky top-0 z-40 w-full bg-background/95 dark:bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-black/8 dark:border-white/8 transition-shadow duration-200 ${scrolled ? "shadow-[0_2px_16px_rgba(0,0,0,0.35)]" : ""}`}
-        >
-          <div className="relative max-w-2xl mx-auto flex items-center justify-between gap-2 px-4 pt-3 pb-3 min-h-16 overflow-hidden">
-            <div
-              className={`min-w-0 transition-opacity duration-300 ${subscribeExpanded ? "absolute left-4 top-3 z-0 opacity-0 pointer-events-none sm:static sm:opacity-100 sm:pointer-events-auto sm:z-auto" : ""}`}
-            >
-              <Link href="/" className="flex items-center gap-2 sm:gap-3" aria-label="Noisebrief home">
-                <svg aria-hidden="true" width="32" height="32" viewBox="0 0 32 32" fill="none" className="h-8 w-8 shrink-0 sm:h-9 sm:w-9">
-                  <path d="M7 6H11.5L16 13.5V6H20.5V26H16.5L11.5 17.5V26H7V6Z" fill="#00d4aa" />
-                  <path d="M22 11 Q25 13.5 25 16 Q25 18.5 22 21" stroke="#00d4aa" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.9" />
-                  <path d="M23.5 8.5 Q28 12 28 16 Q28 20 23.5 23.5" stroke="#00d4aa" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5" />
-                  <path d="M25 6 Q31 10.5 31 16 Q31 21.5 25 26" stroke="#00d4aa" strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.25" />
-                </svg>
-                <span
-                  className="font-heading text-2xl font-bold tracking-tight text-[#1a1a1a] dark:text-white sm:text-3xl md:text-4xl"
-                  style={{ fontFamily: "var(--font-heading)" }}
-                >
-                  noisebrief<span style={{ color: "#00d4aa" }}>.</span>
-                </span>
-              </Link>
-              <p className="mt-1 break-words text-sm text-foreground/40">Today&apos;s tech noise. Briefly.</p>
-            </div>
-            <div className={`flex flex-col items-end gap-1 ${subscribeExpanded ? "flex-1 min-w-0" : "shrink-0"}`}>
-              <SubscribePill onExpandedChange={setSubscribeExpanded} />
-              <p className="text-sm text-foreground/40">One email. Every morning.</p>
-            </div>
+      <header
+        className={`sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur-sm transition-shadow duration-200 ${scrolled ? "shadow-[0_2px_16px_rgba(0,0,0,0.12)] dark:shadow-[0_2px_16px_rgba(0,0,0,0.5)]" : ""}`}
+      >
+        <div className="relative mx-auto flex min-h-16 max-w-2xl items-center justify-between gap-2 overflow-hidden px-4 py-3">
+          <div
+            className={`min-w-0 transition-opacity duration-300 ${subscribeExpanded ? "pointer-events-none absolute left-4 top-3 z-0 opacity-0 sm:pointer-events-auto sm:static sm:z-auto sm:opacity-100" : ""}`}
+          >
+            <Link href="/" className="flex items-center gap-2 rounded-md sm:gap-3" aria-label="Noisebrief home">
+              <Logo className="h-8 w-8 shrink-0 sm:h-9 sm:w-9" />
+              <span className="font-heading text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl">
+                noisebrief<span className="text-brand">.</span>
+              </span>
+            </Link>
+            <p className="mt-1 text-sm text-muted-foreground">Today&apos;s tech noise. Briefly.</p>
           </div>
-        </header>
+          <div className={`flex flex-col items-end gap-1 ${subscribeExpanded ? "min-w-0 flex-1" : "shrink-0"}`}>
+            <SubscribePill onExpandedChange={setSubscribeExpanded} />
+            <p className="text-sm text-muted-foreground">One email. Every morning.</p>
+          </div>
+        </div>
+      </header>
 
-        <div className="relative z-0 mx-auto min-w-0 max-w-2xl px-4 pb-4 pt-6 sm:px-4">
-          <section className="mb-6 min-w-0 mt-1">
-            <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2">
-              <p
-                className="font-heading shrink-0 text-base font-semibold text-[#6b6b6b] dark:text-zinc-400 sm:text-lg"
-                style={{ fontFamily: "var(--font-heading)" }}
-              >
-                Latest Brief
-              </p>
-              {hasBrief && brief.date && (
-                <>
-                  <span className="shrink-0 rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-xs font-medium text-[#1a1a1a]/80 ring-1 ring-teal-500/30 dark:border-white/10 dark:bg-[#1a1a2e] dark:text-white/80">
-                    {formatBadgeDate(brief.date)}
-                  </span>
-                  <BriefDatePicker
-                    selectedDate={brief.date}
-                    isHistorical={isHistorical}
-                    onSelectDate={navigateToDate}
-                    dates={dates}
-                    loadingDates={false}
-                    open={datePickerOpen}
-                    onOpenChange={setDatePickerOpen}
-                  />
-                </>
-              )}
-            </div>
+      <main id="main" tabIndex={-1} className="relative z-0 mx-auto w-full min-w-0 max-w-2xl flex-1 px-4 pb-4 pt-6 outline-none">
+        <section aria-labelledby={hasBrief ? "brief-title" : undefined} className="mb-6 mt-1 min-w-0">
+          <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2">
+            <p className="font-heading shrink-0 text-base font-semibold text-muted-foreground sm:text-lg">
+              {isHistorical ? "Past brief" : "Latest brief"}
+            </p>
+            {hasBrief && briefDate && (
+              <>
+                <time
+                  dateTime={briefDate}
+                  className="shrink-0 rounded border border-border bg-card px-1.5 py-0.5 text-xs font-medium text-foreground"
+                >
+                  {formatDate(briefDate, { month: "short", day: "numeric" })}
+                </time>
+                <BriefDatePicker
+                  selectedDate={briefDate}
+                  isHistorical={isHistorical}
+                  onSelectDate={navigateToDate}
+                  dates={dates}
+                  open={datePickerOpen}
+                  onOpenChange={setDatePickerOpen}
+                />
+              </>
+            )}
+          </div>
+
+          <div aria-live="polite" aria-busy={isNavigating}>
             {isNavigating && <SummarySkeleton />}
             {!isNavigating && hasBrief && (
-              <div className="min-w-0">
-                <div className="mt-4 mb-3 sm:mt-6 sm:mb-4">
-                  {brief.date && (
-                    <p className="text-sm font-medium tracking-widest uppercase text-foreground/40 mb-1">
-                      {isHistorical ? formatBriefDateLabel(brief.date) : "TODAY'S BRIEF"}
+              <article className="min-w-0">
+                <div className="mb-3 mt-4 sm:mb-4 sm:mt-6">
+                  {briefDate && (
+                    <p className="mb-1 text-sm font-medium uppercase tracking-widest text-muted-foreground">
+                      {isHistorical
+                        ? formatDate(briefDate, { weekday: "long", month: "long", day: "numeric" })
+                        : "Today's brief"}
                     </p>
                   )}
                   {brief.title && (
-                    <h1
-                      className="font-heading text-2xl font-bold leading-tight text-[#1a1a1a] dark:text-white sm:text-3xl"
-                      style={{ fontFamily: "var(--font-heading)" }}
-                    >
+                    <h1 id="brief-title" className="font-heading text-2xl font-bold leading-tight text-foreground sm:text-3xl">
                       {brief.title}
                     </h1>
                   )}
                 </div>
-                <AnimatedParagraphs
-                  paragraphs={paragraphs}
-                  animate={!skipAnimation}
-                  onComplete={handleRevealComplete}
-                />
-              </div>
+                <BriefParagraphs paragraphs={paragraphs} />
+              </article>
             )}
             {!isNavigating && !hasBrief && (
-              <p className="text-sm text-[#6b6b6b] dark:text-zinc-500">No brief yet. Check back after the daily run.</p>
+              <p className="text-sm text-muted-foreground">No brief yet. Check back after the daily run.</p>
             )}
-          </section>
+          </div>
+        </section>
 
-          {!isNavigating && brief && brief.sources.length > 0 && (
-            <section className={`mt-8 sm:mt-6 mb-6 min-w-0 section-reveal ${revealDone ? "section-reveal-visible" : ""}`}>
-              <h2 className="mb-3 text-sm text-foreground/60">
-                Sources  ·  {brief.sources.length} today
-              </h2>
-              <SourceList
-                sources={brief.sources}
-                briefDate={brief.date}
-                summaryComplete={revealDone}
-                isHistorical={isHistorical}
-                open={sourcesOpen}
-                onOpenChange={setSourcesOpen}
-              />
-            </section>
-          )}
-        </div>
+        {!isNavigating && brief && brief.sources.length > 0 && (
+          <section aria-labelledby="sources-heading" className="mb-6 mt-8 min-w-0 sm:mt-6">
+            <h2 id="sources-heading" className="mb-3 text-sm font-medium text-muted-foreground">
+              Sources · {brief.sources.length}
+              {isHistorical ? "" : " today"}
+            </h2>
+            <SourceList
+              sources={brief.sources}
+              briefDate={brief.date}
+              open={sourcesOpen}
+              onOpenChange={setSourcesOpen}
+            />
+          </section>
+        )}
       </main>
-      <footer className="border-t border-zinc-200 dark:border-white/5 px-4 py-6 text-center text-xs text-foreground/50 sm:text-xs">
-        <span>
-          Built by{" "}
-          <a
-            href="https://barisermut.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="cursor-pointer hover:underline text-teal-600 dark:text-teal-400"
-          >
+
+      <footer className="flex flex-wrap items-center justify-center gap-x-1 border-t border-border px-4 py-5 text-sm text-muted-foreground">
+        <span className="inline-flex min-h-6 items-center">
+          Built by&nbsp;
+          <a href="https://barisermut.com" target="_blank" rel="noopener noreferrer" className="text-link underline-offset-2 hover:text-link-hover hover:underline">
             Barış Ermut
           </a>
         </span>
-        <span className="select-none mx-1.5" aria-hidden>·</span>
-        <Link href="/privacy" className="cursor-pointer hover:underline text-inherit">
+        <span aria-hidden className="select-none px-1">·</span>
+        <Link href="/privacy" className="inline-flex min-h-6 items-center underline-offset-2 hover:text-foreground hover:underline">
           Privacy Policy
         </Link>
-        <span className="select-none mx-1.5" aria-hidden>·</span>
+        <span aria-hidden className="select-none px-1">·</span>
         <ThemeToggle />
       </footer>
     </div>
