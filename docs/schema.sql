@@ -7,18 +7,15 @@ create table if not exists daily_briefs (
   summary text not null,
   paragraphs jsonb,
   sources jsonb not null,
-  generated_posts jsonb,
   created_at timestamp with time zone default now()
 );
 
 -- For existing tables, add new columns if missing
 alter table public.daily_briefs add column if not exists title text;
 alter table public.daily_briefs add column if not exists paragraphs jsonb;
-alter table public.daily_briefs add column if not exists generated_posts jsonb;
 
 -- Explicit grants required for Data API (PostgREST/supabase-js) access
 grant select on public.daily_briefs to anon;
-grant select, insert, update, delete on public.daily_briefs to authenticated;
 grant select, insert, update, delete on public.daily_briefs to service_role;
 
 -- RLS (allow public read, restrict write to service role)
@@ -39,7 +36,9 @@ create table if not exists email_subscribers (
   email text not null unique,
   subscribed_at timestamp with time zone default now(),
   unsubscribe_token text not null unique,
-  unsubscribed_at timestamp with time zone
+  unsubscribed_at timestamp with time zone,
+  -- Set when the subscriber clicks the double opt-in link; digests only go to confirmed rows.
+  confirmed_at timestamp with time zone
 );
 
 -- Explicit grants required for Data API (PostgREST/supabase-js) access

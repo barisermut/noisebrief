@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
 import type { Theme } from "./ThemeProvider";
 import { useTheme } from "./ThemeProvider";
@@ -14,20 +14,13 @@ const TITLES: Record<Theme, string> = {
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [icon, setIcon] = useState<"monitor" | "sun" | "moon">("monitor");
-
-  useEffect(() => {
-    if (theme === "light") setIcon("sun");
-    else if (theme === "dark") setIcon("moon");
-    else setIcon("monitor");
-  }, [theme]);
 
   const cycle = useCallback(() => {
     const i = ORDER.indexOf(theme);
     setTheme(ORDER[(i + 1) % ORDER.length]);
   }, [theme, setTheme]);
 
-  const Icon = icon === "sun" ? Sun : icon === "moon" ? Moon : Monitor;
+  const Icon = theme === "light" ? Sun : theme === "dark" ? Moon : Monitor;
   const title = TITLES[theme];
 
   return (

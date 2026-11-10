@@ -52,6 +52,7 @@ export async function runDigest(): Promise<DigestResult> {
     .from("email_subscribers")
     .select("email, unsubscribe_token")
     .is("unsubscribed_at", null)
+    .not("confirmed_at", "is", null)
     .order("subscribed_at", { ascending: true });
 
   if (subError) {

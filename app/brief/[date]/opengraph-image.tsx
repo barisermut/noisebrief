@@ -1,7 +1,8 @@
 import { ImageResponse } from 'next/og';
 import { readFile } from 'fs/promises';
 import path from 'path';
-import { createClient } from '@supabase/supabase-js';
+import { getBriefByDate } from '@/lib/brief-server';
+import { isValidDateString } from '@/lib/date';
 
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
@@ -17,18 +18,7 @@ export default async function BriefOGImage({
     path.join(process.cwd(), 'app/fonts/Syne-Bold.woff')
   );
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl) throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
-  if (!supabaseKey) throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY");
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
-
-  const { data } = await supabase
-    .from('daily_briefs')
-    .select('title, date')
-    .eq('date', date)
-    .maybeSingle();
+  const data = isValidDateString(date) ? await getBriefByDate(date).catch(() => null) : null;
 
   const title = data?.title ?? 'Today\'s Tech News';
   const dateStr = data?.date ?? date;

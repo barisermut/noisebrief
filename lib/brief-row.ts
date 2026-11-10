@@ -1,5 +1,6 @@
 import { tryParseJsonWithRepair } from "@/lib/llm-json";
 import type { ParagraphsField } from "@/types/brief";
+import type { Source } from "@/types";
 import { normalizeParagraphs } from "@/types/brief";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -116,4 +117,44 @@ function unwrapParagraphFieldIfEmbeddedBriefJson(
     field: parsed.paragraphs as ParagraphsField,
     titleFromBlob,
   };
+}
+
+/** Brief shape shared by the API routes, server-rendered pages and the client provider. */
+export interface BriefData {
+  title: string | null;
+  summary: string;
+  paragraphs: ParagraphsField;
+  sources: Source[];
+  generatedAt: string | null;
+  date: string | null;
+  isFallback?: boolean;
+}
+
+/** Repairs legacy shapes and guarantees `paragraphs` is non-empty whenever there is a summary. */
+export function normalizeBrief(data: BriefData): BriefData {
+  const n = normalizeBriefRowFields(data);
+  return {
+    ...data,
+    title: n.title,
+    summary: n.summary,
+    paragraphs: n.paragraphs.length > 0 ? n.paragraphs : n.summary ? [n.summary] : [],
+    sources: Array.isArray(data.sources) ? data.sources : [],
+  };
+}
+
+export const BRIEF_COLUMNS = "date, title, summary, paragraphs, sources, created_at";
+
+export function briefFromRow(
+  row: { date: string; title: string | null; summary: string; paragraphs: unknown; sources: unknown; created_at: string },
+  isFallback = false
+): BriefData {
+  return normalizeBrief({
+    title: row.title,
+    summary: row.summary,
+    paragraphs: row.paragraphs as ParagraphsField,
+    sources: (Array.isArray(row.sources) ? row.sources : []) as Source[],
+    generatedAt: row.created_at,
+    date: row.date,
+    isFallback,
+  });
 }

@@ -1,117 +1,80 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { subscribeRatelimiter, getClientIp } from "@/lib/ratelimit";
-import { sendWelcomeEmail } from "@/lib/resend";
+import { allowRequest, subscribeRatelimiter } from "@/lib/ratelimit";
+import { sendConfirmEmail } from "@/lib/resend";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_EMAIL_LENGTH = 254;
 
+const error = (code: string, status: number) => NextResponse.json({ error: code }, { status });
+
+/**
+ * Double opt-in. Always answers "check_email" so the response never reveals whether an
+ * address is already subscribed. Only a click on the confirmation link activates delivery.
+ */
 export async function POST(request: NextRequest) {
   try {
-    if (subscribeRatelimiter) {
-      const ip = getClientIp(request);
-      const { success } = await subscribeRatelimiter.limit(ip);
-      if (!success) {
-        return NextResponse.json(
-          { error: "rate_limited" },
-          { status: 429 }
-        );
-      }
-    }
+    if (!(await allowRequest(subscribeRatelimiter, request))) return error("rate_limited", 429);
 
     let body: { email?: unknown };
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json(
-        { error: "invalid_email" },
-        { status: 400 }
-      );
+      return error("invalid_email", 400);
     }
-
-    const raw = body.email;
-    if (typeof raw !== "string") {
-      return NextResponse.json(
-        { error: "invalid_email" },
-        { status: 400 }
-      );
-    }
-
-    const email = raw.trim().toLowerCase();
-    if (!email || !EMAIL_REGEX.test(email)) {
-      return NextResponse.json(
-        { error: "invalid_email" },
-        { status: 400 }
-      );
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    if (!email || email.length > MAX_EMAIL_LENGTH || !EMAIL_REGEX.test(email)) {
+      return error("invalid_email", 400);
     }
 
     const admin = getSupabaseAdmin();
     const { data: row, error: selectError } = await admin
       .from("email_subscribers")
-      .select("id, unsubscribed_at")
+      .select("id, unsubscribed_at, confirmed_at, unsubscribe_token")
       .eq("email", email)
       .maybeSingle();
-
     if (selectError) {
       console.error("Subscribe select error", selectError);
-      return NextResponse.json(
-        { error: "server_error" },
-        { status: 500 }
-      );
+      return error("server_error", 500);
     }
 
-    if (row) {
-      if (row.unsubscribed_at === null) {
-        return NextResponse.json({ message: "subscribed" });
+    let token: string;
+    if (!row) {
+      token = crypto.randomUUID();
+      const { error: insertError } = await admin
+        .from("email_subscribers")
+        .insert({ email, unsubscribe_token: token, confirmed_at: null });
+      if (insertError) {
+        console.error("Subscribe insert error", insertError);
+        return error("server_error", 500);
       }
-      const newToken = crypto.randomUUID();
+    } else if (row.unsubscribed_at === null && row.confirmed_at !== null) {
+      // Already active: nothing to do, and nothing to reveal.
+      return NextResponse.json({ message: "check_email" });
+    } else if (row.unsubscribed_at === null) {
+      // Pending confirmation: resend the same link.
+      token = row.unsubscribe_token;
+    } else {
+      // Previously unsubscribed: start a fresh pending subscription.
+      token = crypto.randomUUID();
       const { error: updateError } = await admin
         .from("email_subscribers")
-        .update({
-          unsubscribed_at: null,
-          unsubscribe_token: newToken,
-        })
+        .update({ unsubscribed_at: null, confirmed_at: null, unsubscribe_token: token })
         .eq("id", row.id);
-
       if (updateError) {
         console.error("Subscribe update error", updateError);
-        return NextResponse.json(
-          { error: "server_error" },
-          { status: 500 }
-        );
+        return error("server_error", 500);
       }
-      try {
-        await sendWelcomeEmail(email, newToken);
-      } catch (err) {
-        console.error("Welcome email failed after re-subscribe", err);
-      }
-      return NextResponse.json({ message: "subscribed" });
-    }
-
-    const unsubscribeToken = crypto.randomUUID();
-    const { error: insertError } = await admin.from("email_subscribers").insert({
-      email,
-      unsubscribe_token: unsubscribeToken,
-    });
-
-    if (insertError) {
-      console.error("Subscribe insert error", insertError);
-      return NextResponse.json(
-        { error: "server_error" },
-        { status: 500 }
-      );
     }
 
     try {
-      await sendWelcomeEmail(email, unsubscribeToken);
-    } catch (err) {
-      console.error("Welcome email failed after subscribe", err);
+      await sendConfirmEmail(email, token);
+    } catch {
+      return error("server_error", 500);
     }
-    return NextResponse.json({ message: "subscribed" });
+    return NextResponse.json({ message: "check_email" });
   } catch (err) {
     console.error("Subscribe unexpected error", err);
-    return NextResponse.json(
-      { error: "server_error" },
-      { status: 500 }
-    );
+    return error("server_error", 500);
   }
 }

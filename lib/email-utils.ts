@@ -1,5 +1,8 @@
 import { Resend } from "resend";
 
+export const EMAIL_FROM = "Noisebrief <briefs@noisebrief.com>";
+export const EMAIL_REPLY_TO = "briefs@noisebrief.com";
+
 let _resend: Resend | null = null;
 
 export function getResendClient(): Resend {
@@ -10,6 +13,7 @@ export function getResendClient(): Resend {
   return _resend;
 }
 
+/** Escapes text for HTML element content and double-quoted attributes. */
 export function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")

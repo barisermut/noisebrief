@@ -1,19 +1,20 @@
-import crypto from "node:crypto";
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
+import { isCronAuthorized } from "@/lib/auth";
 import { fetchAllSources } from "@/lib/fetchAllSources";
 import { generateDailySummary } from "@/lib/claude";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { runDigest } from "@/lib/runDigest";
+import { getTodayDateString } from "@/lib/date";
 import type { Source } from "@/types";
+import type { Json } from "@/types/supabase";
 
 // Brief + digest in one run; digest can take time with many subscribers.
 export const maxDuration = 120;
 
 /** Extract URLs from yesterday's brief sources for deduplication. */
 async function getYesterdayBriefUrls(): Promise<Set<string>> {
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayDate = yesterday.toISOString().slice(0, 10);
+  const yesterdayDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const { data } = await getSupabaseAdmin()
     .from("daily_briefs")
     .select("sources")
@@ -28,15 +29,7 @@ async function getYesterdayBriefUrls(): Promise<Set<string>> {
 }
 
 export async function GET(request: Request) {
-  // Vercel Cron: send Authorization: Bearer <CRON_SECRET>; validate before any work.
-  const cronSecret = request.headers.get("authorization") ?? "";
-  const expected = `Bearer ${process.env.CRON_SECRET ?? ""}`;
-  if (!process.env.CRON_SECRET) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const a = Buffer.from(cronSecret);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+  if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -70,50 +63,31 @@ export async function GET(request: Request) {
       sourcesToUse = sources;
     }
 
-    let title: string;
-    let summary: string;
-    let paragraphs: Awaited<ReturnType<typeof generateDailySummary>>["paragraphs"];
-    let usedSources: Awaited<ReturnType<typeof generateDailySummary>>["usedSources"];
+    let result: Awaited<ReturnType<typeof generateDailySummary>>;
     try {
-      const result = await generateDailySummary(sourcesToUse);
-      title = result.title;
-      summary = result.summary;
-      paragraphs = result.paragraphs;
-      usedSources = result.usedSources;
+      result = await generateDailySummary(sourcesToUse);
     } catch (err) {
       console.error("Cron error after Claude API call", err);
       throw new Error("Claude API failed");
     }
+    const { title, summary, paragraphs, usedSources } = result;
 
-    const today = new Date().toISOString().slice(0, 10);
-
-    let supabaseError: { message: string } | null = null;
-    try {
-      const table = getSupabaseAdmin().from("daily_briefs");
-      type UpsertPayload = {
-        date: string;
-        title: string;
-        summary: string;
-        paragraphs: unknown;
-        sources: unknown;
-      };
-      const result = await (table.upsert as (v: UpsertPayload, o: { onConflict: string }) => ReturnType<typeof table.upsert>)(
-        { date: today, title, summary, paragraphs, sources: usedSources },
+    const today = getTodayDateString();
+    const { error: upsertError } = await getSupabaseAdmin()
+      .from("daily_briefs")
+      .upsert(
+        { date: today, title, summary, paragraphs: paragraphs as unknown as Json, sources: usedSources as unknown as Json },
         { onConflict: "date" }
       );
-      supabaseError = result.error;
-    } catch (err) {
-      console.error("Cron error after Supabase insert", err);
-      throw new Error("Supabase insert failed");
+    if (upsertError) {
+      console.error("Supabase upsert error", upsertError);
+      return NextResponse.json({ error: "Failed to store brief" }, { status: 500 });
     }
 
-    if (supabaseError) {
-      console.error("Supabase upsert error", supabaseError);
-      return NextResponse.json(
-        { error: "Failed to store brief" },
-        { status: 500 }
-      );
-    }
+    // Publish the new brief right away instead of waiting for the ISR window.
+    revalidatePath("/");
+    revalidatePath("/brief/[date]", "page");
+    revalidatePath("/sitemap.xml");
 
     // Run digest immediately after brief so order is guaranteed (Vercel Hobby cron window).
     const digestResult = await runDigest();

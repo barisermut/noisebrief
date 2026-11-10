@@ -17,7 +17,6 @@ export interface Database {
           summary: string;
           paragraphs: Json | null;
           sources: Json;
-          generated_posts: Json | null;
           created_at: string;
         };
         Insert: {
@@ -27,7 +26,6 @@ export interface Database {
           summary: string;
           paragraphs?: Json | null;
           sources: Json;
-          generated_posts?: Json | null;
           created_at?: string;
         };
         Update: {
@@ -37,7 +35,6 @@ export interface Database {
           summary?: string;
           paragraphs?: Json | null;
           sources?: Json;
-          generated_posts?: Json | null;
           created_at?: string;
         };
         Relationships: [];
@@ -49,6 +46,7 @@ export interface Database {
           subscribed_at: string;
           unsubscribe_token: string;
           unsubscribed_at: string | null;
+          confirmed_at: string | null;
         };
         Insert: {
           id?: string;
@@ -56,6 +54,7 @@ export interface Database {
           subscribed_at?: string;
           unsubscribe_token: string;
           unsubscribed_at?: string | null;
+          confirmed_at?: string | null;
         };
         Update: {
           id?: string;
@@ -63,16 +62,12 @@ export interface Database {
           subscribed_at?: string;
           unsubscribe_token?: string;
           unsubscribed_at?: string | null;
+          confirmed_at?: string | null;
         };
         Relationships: [];
       };
     };
     Views: Record<string, never>;
-    Functions: {
-      set_generated_post_if_missing: {
-        Args: { brief_date: string; tone_key: string; post_text: string };
-        Returns: void;
-      };
-    };
+    Functions: Record<string, never>;
   };
 }

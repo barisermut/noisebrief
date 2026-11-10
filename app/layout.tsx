@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
-import { BriefProvider } from "./components/BriefProvider";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { getSiteUrl } from "@/lib/site";
 import "@fontsource/syne/400.css";
@@ -65,9 +64,7 @@ export default function RootLayout({
   })()
 ` }} />
         <ThemeProvider>
-          <BriefProvider>
-            {children}
-          </BriefProvider>
+          {children}
         </ThemeProvider>
         <Analytics />
         <SpeedInsights />

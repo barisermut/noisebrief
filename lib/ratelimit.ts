@@ -1,61 +1,34 @@
-import { Ratelimit } from "@upstash/ratelimit";
+import { Ratelimit, type Duration } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-const redisConfigured =
-  !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN;
+const url = process.env.UPSTASH_REDIS_REST_URL;
+const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+const redis = url && token ? new Redis({ url, token }) : null;
 
-if (!redisConfigured) {
-  console.warn("Rate limiting disabled: UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN is missing");
+if (!redis) {
+  console.error("Rate limiting disabled: UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN is missing");
 }
 
-function createRatelimiter() {
-  if (!redisConfigured) {
-    return null;
-  }
-  const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
-  });
+function limiter(requests: number, window: Duration, prefix: string): Ratelimit | null {
+  if (!redis) return null;
   return new Ratelimit({
     redis,
-    limiter: Ratelimit.slidingWindow(10, "1 m"), // 10 requests per minute per IP
+    limiter: Ratelimit.slidingWindow(requests, window),
+    prefix: `@upstash/ratelimit:${prefix}`,
     analytics: false,
   });
 }
 
-function createSubscribeRatelimiter() {
-  if (!redisConfigured) {
-    return null;
-  }
-  const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
-  });
-  return new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(3, "1 h"), // 3 subscribe attempts per hour per IP
-    analytics: false,
-  });
-}
+export const ratelimiter = limiter(10, "1 m", "favicon");
+export const subscribeRatelimiter = limiter(3, "1 h", "subscribe");
+export const unsubscribeRatelimiter = limiter(50, "1 m", "unsubscribe");
 
-function createUnsubscribeRatelimiter() {
-  if (!redisConfigured) {
-    return null;
-  }
-  const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-  });
-  return new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(50, "1 m"),
-    analytics: false,
-  });
+/** Returns true when the request is allowed (or rate limiting is not configured). */
+export async function allowRequest(rl: Ratelimit | null, request: Request): Promise<boolean> {
+  if (!rl) return true;
+  const { success } = await rl.limit(getClientIp(request));
+  return success;
 }
-
-export const ratelimiter = createRatelimiter();
-export const subscribeRatelimiter = createSubscribeRatelimiter();
-export const unsubscribeRatelimiter = createUnsubscribeRatelimiter();
 
 export function getClientIp(request: Request): string {
   return (

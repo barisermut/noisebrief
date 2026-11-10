@@ -1,15 +1,25 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { notFound } from "next/navigation";
 import { NoisebriefContent } from "@/app/components/NoisebriefContent";
-import { getBriefByDate } from "@/lib/brief-server";
-import { getSiteUrl } from "@/lib/site";
+import { getAvailableDates, getBriefByDate } from "@/lib/brief-server";
 import { isValidDateString } from "@/lib/date";
+import { jsonLd } from "@/lib/json-ld";
+import { getSiteUrl } from "@/lib/site";
+
+// Rendered on first request, then cached; the daily cron revalidates these pages.
+export const revalidate = 3600;
+export async function generateStaticParams() {
+  return [];
+}
+
+type Params = { params: Promise<{ date: string }> };
 
 function formatBriefDate(dateStr: string): string {
-  return new Date(dateStr + "Z").toLocaleDateString("en-US", {
+  return new Date(dateStr + "T12:00:00Z").toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 
@@ -21,104 +31,51 @@ function truncateToFirstSentence(text: string, maxLen: number): string {
   return first.slice(0, maxLen - 3).trimEnd() + "...";
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ date: string }>;
-}): Promise<Metadata> {
+async function loadBrief(date: string) {
+  if (!isValidDateString(date)) return null;
+  return getBriefByDate(date);
+}
+
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { date } = await params;
-  if (!date || !isValidDateString(date)) {
-    return {
-      title: "Brief not found | Noisebrief",
-      description: "Daily AI-generated tech news digest.",
-    };
-  }
+  const brief = await loadBrief(date);
+  if (!brief) return { title: "Brief not found | Noisebrief", robots: { index: false } };
 
-  const brief = await getBriefByDate(date);
-  const siteUrl = getSiteUrl();
-  const url = `${siteUrl}/brief/${date}`;
-  const formattedDate = formatBriefDate(date);
-
-  if (!brief) {
-    return {
-      title: `Brief · ${formattedDate} | Noisebrief`,
-      description: "Daily AI-generated tech news digest.",
-      openGraph: { url, title: `Brief · ${formattedDate} | Noisebrief`, description: "Daily AI-generated tech news digest." },
-      twitter: { card: "summary_large_image", title: `Brief · ${formattedDate} | Noisebrief`, description: "Daily AI-generated tech news digest." },
-    };
-  }
-
-  const title = brief.title?.trim() || "Tech brief";
-  const metaTitle = `${title} · ${formattedDate} | Noisebrief`;
+  const path = `/brief/${date}`;
+  const title = `${brief.title?.trim() || "Tech brief"} · ${formatBriefDate(date)} | Noisebrief`;
   const description = truncateToFirstSentence(brief.summary, 160);
-
   return {
-    title: metaTitle,
+    title,
     description,
-    openGraph: {
-      title: metaTitle,
-      description,
-      url,
-      siteName: "Noisebrief",
-      type: "article",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: metaTitle,
-      description,
-    },
+    alternates: { canonical: path },
+    openGraph: { title, description, url: `${getSiteUrl()}${path}`, siteName: "Noisebrief", type: "article" },
+    twitter: { card: "summary_large_image", title, description },
   };
 }
 
-/**
- * Historical brief at /brief/YYYY-MM-DD. Validates date; invalid shows inline error.
- */
-export default async function BriefDatePage({
-  params,
-}: {
-  params: Promise<{ date: string }>;
-}) {
+/** Historical brief at /brief/YYYY-MM-DD. */
+export default async function BriefDatePage({ params }: Params) {
   const { date } = await params;
+  const [brief, dates] = await Promise.all([loadBrief(date), getAvailableDates()]);
+  if (!brief) notFound();
 
-  if (!date || !isValidDateString(date)) {
-    return (
-      <div className="mx-auto min-w-0 max-w-2xl px-4 py-8">
-        <p className="text-sm text-muted-foreground">Invalid date.</p>
-        <Link
-          href="/"
-          className="mt-2 inline-block text-xs text-muted-foreground transition-colors hover:text-primary"
-        >
-          Back to today
-        </Link>
-      </div>
-    );
-  }
-
-  const brief = await getBriefByDate(date);
   const siteUrl = getSiteUrl();
-
-  const articleSchema =
-    brief ?
-      {
-        "@context": "https://schema.org",
-        "@type": "Article",
-        headline: brief.title?.trim() || "Tech brief",
-        datePublished: brief.date,
-        description: truncateToFirstSentence(brief.summary, 160),
-        url: `${siteUrl}/brief/${date}`,
-        publisher: { "@type": "Organization", name: "Noisebrief", url: siteUrl },
-      }
-    : null;
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: brief.title?.trim() || "Tech brief",
+    datePublished: date,
+    description: truncateToFirstSentence(brief.summary, 160),
+    url: `${siteUrl}/brief/${date}`,
+    image: `${siteUrl}/brief/${date}/opengraph-image`,
+    author: { "@type": "Organization", name: "Noisebrief", url: siteUrl },
+    publisher: { "@type": "Organization", name: "Noisebrief", url: siteUrl },
+  };
 
   return (
     <>
-      {articleSchema && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
-        />
-      )}
-      <NoisebriefContent />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(articleSchema) }} />
+      <NoisebriefContent key={date} brief={brief} dates={dates} />
     </>
   );
 }

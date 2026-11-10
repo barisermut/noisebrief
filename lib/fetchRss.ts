@@ -26,6 +26,16 @@ function isRedditUrl(url: string): boolean {
   return url.includes("reddit.com");
 }
 
+/** Only plain web links: blocks javascript:, data: and other schemes from feed items. */
+function isHttpUrl(url: string): boolean {
+  try {
+    const { protocol } = new URL(url);
+    return protocol === "https:" || protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
 function decodeHtmlEntities(text: string): string {
   return text
     .replace(/&#8217;/g, "'")
@@ -86,10 +96,10 @@ export async function fetchRssFeed(
     const cutoff = Date.now() - MS_48_HOURS;
 
     const mapped = items
-      .filter((item) => item.title && item.link)
+      .filter((item) => item.title && item.link && isHttpUrl(item.link.trim()))
       .map((item) => ({
         title: decodeHtmlEntities(item.title ?? "").trim(),
-        url: item.link!.trim(),
+        url: item.link.trim(),
         sourceName,
         domain,
         publishedAt: item.isoDate ?? item.pubDate ?? new Date().toISOString(),

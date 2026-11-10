@@ -1,83 +1,23 @@
 import { NextResponse } from "next/server";
-import { normalizeBriefRowFields } from "@/lib/brief-row";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { getBriefByDate } from "@/lib/brief-server";
 import { isValidDateString } from "@/lib/date";
-import type { Source } from "@/types";
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ date: string }> }
-) {
+export async function GET(_request: Request, { params }: { params: Promise<{ date: string }> }) {
   const { date } = await params;
-
-  if (!date || !isValidDateString(date)) {
-    return NextResponse.json(
-      { error: "Invalid date format. Use YYYY-MM-DD." },
-      { status: 400 }
-    );
+  if (!isValidDateString(date)) {
+    return NextResponse.json({ error: "Invalid date format. Use YYYY-MM-DD." }, { status: 400 });
   }
 
   try {
-    const admin = getSupabaseAdmin();
-    const { data, error } = await admin
-      .from("daily_briefs")
-      .select("date, title, summary, paragraphs, sources, created_at")
-      .eq("date", date)
-      .maybeSingle();
-
-    if (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Brief [date] query error:", error);
-      }
-      return NextResponse.json(
-        { error: "Failed to fetch brief." },
-        { status: 500 }
-      );
+    const brief = await getBriefByDate(date);
+    if (!brief) {
+      return NextResponse.json({ error: "No brief found for this date." }, { status: 404 });
     }
-
-    if (!data) {
-      return NextResponse.json(
-        { error: "No brief found for this date." },
-        { status: 404 }
-      );
-    }
-
-    const row = data as {
-      date: string;
-      title: string | null;
-      summary: string;
-      paragraphs: unknown;
-      sources: unknown;
-      created_at: string;
-    };
-    const normalized = normalizeBriefRowFields({
-      title: row.title,
-      summary: row.summary,
-      paragraphs: row.paragraphs,
+    return NextResponse.json(brief, {
+      headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" },
     });
-    const paras =
-      normalized.paragraphs.length > 0
-        ? normalized.paragraphs
-        : normalized.summary
-          ? [normalized.summary]
-          : [];
-
-    return NextResponse.json({
-      title: normalized.title ?? "",
-      summary: normalized.summary,
-      paragraphs: paras,
-      sources: (row.sources as Source[]) ?? [],
-      generatedAt: row.created_at,
-      date: row.date,
-      isFallback: false,
-    });
-  } catch {
-    if (process.env.NODE_ENV === "development") {
-      console.error("Brief [date] error");
-    }
-    return NextResponse.json(
-      { error: "Failed to fetch brief." },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error("Brief [date] error", err);
+    return NextResponse.json({ error: "Failed to fetch brief." }, { status: 500 });
   }
 }

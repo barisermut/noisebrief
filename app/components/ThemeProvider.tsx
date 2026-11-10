@@ -1,35 +1,29 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 const STORAGE_KEY = "theme";
 export type Theme = "light" | "dark" | "system";
 
-function getStoredTheme(): Theme {
-  if (typeof window === "undefined") return "system";
-  const t = window.localStorage.getItem(STORAGE_KEY);
-  if (t === "light" || t === "dark" || t === "system") return t;
+function readStoredTheme(): Theme {
+  try {
+    const t = window.localStorage.getItem(STORAGE_KEY);
+    if (t === "light" || t === "dark" || t === "system") return t;
+  } catch {
+    // storage unavailable
+  }
   return "system";
 }
 
-function getResolvedDark(theme: Theme): boolean {
-  if (theme === "light") return false;
-  if (theme === "dark") return true;
-  if (typeof window === "undefined") return false;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+function applyTheme(theme: Theme) {
+  const dark =
+    theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.classList.toggle("dark", dark);
 }
 
 interface ThemeContextValue {
   theme: Theme;
   setTheme: (next: Theme) => void;
-  resolvedDark: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -40,68 +34,38 @@ export function useTheme(): ThemeContextValue {
   return ctx;
 }
 
+/**
+ * The inline script in the root layout sets the `dark` class before first paint.
+ * State starts as "system" on both server and client (no hydration mismatch) and is
+ * synced from localStorage after mount.
+ */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "system";
-    try {
-      const t = localStorage.getItem(STORAGE_KEY);
-      return (t === "light" || t === "dark" || t === "system" ? t : "system") as Theme;
-    } catch {
-      return "system";
-    }
-  });
-  const [resolvedDark, setResolvedDark] = useState(false);
+  const [theme, setThemeState] = useState<Theme>("system");
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from browser storage
+    setThemeState(readStoredTheme());
+  }, []);
 
   const setTheme = useCallback((next: Theme) => {
     setThemeState(next);
-    if (typeof window !== "undefined") {
+    try {
       window.localStorage.setItem(STORAGE_KEY, next);
-      // Sync class immediately so UI updates before next paint (Tailwind only cares about .dark on html, not .light)
-      const dark = getResolvedDark(next);
-      const root = document.documentElement;
-      if (dark) root.classList.add("dark");
-      else root.classList.remove("dark");
-      setResolvedDark(dark);
+    } catch {
+      // storage unavailable
     }
+    applyTheme(next);
   }, []);
 
-  // On mount: read localStorage and sync state only (inline script already set html class before paint)
-  useEffect(() => {
-    const stored = getStoredTheme();
-    setThemeState(stored);
-    setResolvedDark(getResolvedDark(stored));
-  }, []);
-
-  // When theme changes: sync html class (backup for any state-driven updates)
-  useEffect(() => {
-    const dark = getResolvedDark(theme);
-    setResolvedDark(dark);
-    const root = document.documentElement;
-    if (dark) root.classList.add("dark");
-    else root.classList.remove("dark");
-  }, [theme]);
-
-  // When theme is "system", listen to prefers-color-scheme changes
+  // Follow OS changes while on "system".
   useEffect(() => {
     if (theme !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const handle = () => {
-      const dark = mq.matches;
-      setResolvedDark(dark);
-      const root = document.documentElement;
-      if (dark) root.classList.add("dark");
-      else root.classList.remove("dark");
-    };
+    const handle = () => applyTheme("system");
     mq.addEventListener("change", handle);
     return () => mq.removeEventListener("change", handle);
   }, [theme]);
 
-  const value = useMemo<ThemeContextValue>(
-    () => ({ theme, setTheme, resolvedDark }),
-    [theme, setTheme, resolvedDark]
-  );
-
-  return (
-    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
-  );
+  const value = useMemo(() => ({ theme, setTheme }), [theme, setTheme]);
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

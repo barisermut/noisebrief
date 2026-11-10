@@ -12,7 +12,7 @@ Today's tech noise. Briefly.
 
 - Fetches RSS from Hacker News, TechCrunch, The Verge, Wired, and key Reddit subs; once per day via cron.
 - Summarizes the lot with Claude into a title and 2–3 paragraphs, deduped against yesterday.
-- Sends a daily email digest to subscribers immediately after the 8 AM UTC cron job, with a welcome email on first signup.
+- Sends a daily email digest to confirmed subscribers right after the 8 AM UTC cron job. Signup is double opt-in: a confirmation email first, then a welcome email.
 
 ---
 
@@ -24,16 +24,16 @@ Today's tech noise. Briefly.
 | TypeScript      | Strict typing across app and API             |
 | Tailwind CSS v4 | Styling; Syne font, dark/light theme         |
 | Supabase        | Postgres for briefs, subscribers, cache      |
-| Anthropic Claude API | Daily summary (Sonnet) |
+| Anthropic Claude API | Daily summary (Haiku 5.5, structured outputs) |
 | Resend          | Welcome and digest emails                    |
 | Vercel          | Hosting and cron (daily 8AM UTC)             |
-| Upstash Redis   | Rate limiting (subscribe, favicon)      |
+| Upstash Redis   | Rate limiting (subscribe, confirm, unsubscribe, favicon) |
 
 ---
 
 ## How it works
 
-A Vercel cron job runs at 8 AM UTC: it fetches all RSS sources in parallel, dedupes against yesterday’s brief, sends the batch to Claude for one summary call, and stores the result in Supabase. The site serves today’s (or latest) brief via API; users can browse by date and subscribe for the daily digest. Immediately after, the same cron job sends the digest email to all active subscribers. New subscribers get a welcome email immediately.
+A Vercel cron job runs at 8 AM UTC: it fetches all RSS sources in parallel, dedupes against yesterday’s brief, sends the batch to Claude for one summary call, and stores the result in Supabase. The site serves today’s (or latest) brief via API; users can browse by date and subscribe for the daily digest. The cron then revalidates the cached pages and sends the digest email to all confirmed subscribers. New subscribers confirm via email first, then get a welcome email.
 
 ---
 

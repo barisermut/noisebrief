@@ -165,7 +165,7 @@ export function SubscribePill({ className, onExpandedChange }: { className?: str
             className="flex items-center gap-1.5 px-3 text-sm text-foreground/60 whitespace-nowrap"
           >
             <CheckCircle className="h-3.5 w-3.5 text-teal-500 shrink-0" />
-            You&apos;re in!
+            Check your inbox
           </motion.div>
         )}
 

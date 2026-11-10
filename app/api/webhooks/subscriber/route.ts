@@ -1,9 +1,7 @@
-import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { maskEmail } from "@/lib/maskEmail";
-import { getResendClient, escapeHtml } from "@/lib/email-utils";
-
-const FROM = "Noisebrief <briefs@noisebrief.com>";
+import { EMAIL_FROM, getResendClient, escapeHtml } from "@/lib/email-utils";
+import { secretMatches } from "@/lib/auth";
 
 type WebhookPayload = {
   type?: string;
@@ -13,14 +11,7 @@ type WebhookPayload = {
 
 export async function POST(request: NextRequest) {
   try {
-    const secret = request.headers.get("x-webhook-secret") ?? "";
-    const expected = process.env.WEBHOOK_SECRET ?? "";
-    if (!process.env.WEBHOOK_SECRET) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const secretA = Buffer.from(secret);
-    const secretB = Buffer.from(expected);
-    if (secretA.length !== secretB.length || !crypto.timingSafeEqual(secretA, secretB)) {
+    if (!secretMatches(request.headers.get("x-webhook-secret") ?? "", process.env.WEBHOOK_SECRET)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -56,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     const client = getResendClient();
     const { error } = await client.emails.send({
-      from: FROM,
+      from: EMAIL_FROM,
       to: [ownerEmail],
       subject: "New Noisebrief subscriber",
       html,
@@ -72,20 +63,4 @@ export async function POST(request: NextRequest) {
     console.error("Webhook subscriber error", err);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
-}
-
-export async function GET() {
-  return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
-}
-
-export async function PUT() {
-  return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
-}
-
-export async function PATCH() {
-  return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
-}
-
-export async function DELETE() {
-  return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
 }

@@ -1,87 +1,24 @@
 import { NextResponse } from "next/server";
-import { normalizeBriefRowFields } from "@/lib/brief-row";
-import { getSupabaseAdmin } from "@/lib/supabase";
-import type { Source } from "@/types";
+import { getLatestBrief } from "@/lib/brief-server";
 
-interface BriefRow {
-  date: string;
-  title: string | null;
-  summary: string;
-  paragraphs: unknown;
-  sources: unknown;
-  created_at: string;
-}
-
-function formatBriefResponse(row: BriefRow, isFallback: boolean) {
-  const normalized = normalizeBriefRowFields({
-    title: row.title,
-    summary: row.summary,
-    paragraphs: row.paragraphs,
-  });
-  const paras =
-    normalized.paragraphs.length > 0
-      ? normalized.paragraphs
-      : normalized.summary
-        ? [normalized.summary]
-        : [];
-  return {
-    title: normalized.title ?? "",
-    summary: normalized.summary,
-    paragraphs: paras,
-    sources: (row.sources as Source[]) ?? [],
-    generatedAt: row.created_at,
-    date: row.date,
-    isFallback,
-  };
-}
-
+/** Latest brief (today's, or the most recent one with `isFallback: true`). */
 export async function GET() {
-  const today = new Date().toISOString().slice(0, 10);
-
   try {
-    const admin = getSupabaseAdmin();
-
-    const [todayResult, latestResult] = await Promise.all([
-      admin
-        .from("daily_briefs")
-        .select("date, title, summary, paragraphs, sources, created_at")
-        .eq("date", today)
-        .maybeSingle(),
-      admin
-        .from("daily_briefs")
-        .select("date, title, summary, paragraphs, sources, created_at")
-        .order("date", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ]);
-
-    const { data: todayData, error: todayError } = todayResult;
-    const { data: latestData, error: latestError } = latestResult;
-
-    if (!todayError && todayData) {
-      return NextResponse.json(formatBriefResponse(todayData as BriefRow, false));
-    }
-
-    if (!latestError && latestData) {
-      return NextResponse.json(formatBriefResponse(latestData as BriefRow, true));
-    }
-
-    return NextResponse.json({
-      title: null,
-      summary: null,
-      paragraphs: [],
-      sources: [],
-      generatedAt: null,
-      date: null,
-      isFallback: false,
-    });
-  } catch {
-    if (process.env.NODE_ENV === "development") {
-      console.error("Brief today error");
-    }
+    const brief = await getLatestBrief();
     return NextResponse.json(
-      { error: "Failed to load brief" },
-      { status: 500 }
+      brief ?? {
+        title: null,
+        summary: "",
+        paragraphs: [],
+        sources: [],
+        generatedAt: null,
+        date: null,
+        isFallback: false,
+      },
+      { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600" } }
     );
+  } catch (err) {
+    console.error("Brief today error", err);
+    return NextResponse.json({ error: "Failed to load brief" }, { status: 500 });
   }
 }
