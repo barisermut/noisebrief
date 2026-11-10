@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { isPublishableBrief } from "@/lib/brief-guard";
 import type { BriefParagraph, ParagraphKeyword, Source } from "@/types";
 
 /**
@@ -7,6 +8,7 @@ import type { BriefParagraph, ParagraphKeyword, Source } from "@/types";
  */
 const MODEL = "claude-haiku-5-5";
 const MIN_WORDS_BETWEEN_KEYWORDS = 15;
+const GENERATION_ATTEMPTS = 2;
 
 let _anthropic: Anthropic | null = null;
 
@@ -112,7 +114,8 @@ export interface DailySummaryResult {
   usedSources: Source[];
 }
 
-export async function generateDailySummary(sources: Source[]): Promise<DailySummaryResult> {
+/** One request to Claude; throws on refusal, truncation or an unpublishable brief. */
+async function requestBrief(sources: Source[]): Promise<DailySummaryResult> {
   const articles = sources.map((s) => `- ${s.title} (${s.sourceName}): ${s.url}`).join("\n");
 
   const message = await getAnthropic().messages.create(
@@ -126,7 +129,7 @@ export async function generateDailySummary(sources: Source[]): Promise<DailySumm
       },
       messages: [{ role: "user", content: `Today's ${sources.length} articles:\n${articles}` }],
     },
-    { timeout: 55_000 }
+    { timeout: 45_000, maxRetries: 1 }
   );
 
   const { input_tokens, output_tokens } = message.usage;
@@ -140,16 +143,32 @@ export async function generateDailySummary(sources: Source[]): Promise<DailySumm
     .join("");
   const parsed = JSON.parse(text) as { title: string; paragraphs: BriefParagraph[] };
 
+  const title = parsed.title.trim();
   const paragraphs = validateParagraphs(
     parsed.paragraphs.filter((p) => p.text.trim().length > 0),
     sources.map((s) => s.url)
   );
-  if (paragraphs.length === 0) throw new Error("Claude returned no paragraphs");
+  if (!isPublishableBrief(title, paragraphs)) {
+    throw new Error("Claude returned an unpublishable brief");
+  }
 
   return {
-    title: parsed.title.trim() || "Today's Brief",
+    title,
     paragraphs,
     summary: paragraphs.map((p) => p.text).join("\n\n"),
     usedSources: sources,
   };
+}
+
+export async function generateDailySummary(sources: Source[]): Promise<DailySummaryResult> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= GENERATION_ATTEMPTS; attempt++) {
+    try {
+      return await requestBrief(sources);
+    } catch (err) {
+      lastError = err;
+      if (attempt < GENERATION_ATTEMPTS) console.warn("Claude brief generation failed; retrying once", err);
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Claude brief generation failed");
 }

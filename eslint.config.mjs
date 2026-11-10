@@ -5,6 +5,13 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    files: ["scripts/**/*.{js,cjs}"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+      "no-console": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
@@ -12,13 +19,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // Local tooling (Claude worktrees) and one-off CommonJS asset scripts.
+    // Local tooling (Claude worktrees).
     ".claude/**",
   ]),
-  {
-    files: ["scripts/**/*.{js,cjs}"],
-    rules: { "@typescript-eslint/no-require-imports": "off" },
-  },
 ]);
 
 export default eslintConfig;

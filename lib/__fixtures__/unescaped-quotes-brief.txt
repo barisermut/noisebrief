@@ -1,0 +1,28 @@
+```json
+{
+  "title": "AI Reshapes Work, Power, Platforms",
+  "paragraphs": [
+    {
+      "text": "The AI industry's appetite for power is colliding with climate reality in ways that are no longer abstract. Amazon's planned data center in Virginia is on track to operate what would be the single worst-polluting power plant in the United States, according to reporting from both TechCrunch and The Verge. Meanwhile, OpenAI — which continues to lead rivals in computer-use benchmarks — is quietly expanding its product surface by acquiring presentation startup NextSlide, a signal that the company is targeting the everyday productivity stack, not just foundational model capability.",
+      "keywords": [
+        { "keyword": "worst-polluting power plant", "url": "https://www.theverge.com/ai-artificial-intelligence/977124/amazon-data-center-worst-polluting-power-plant" },
+        { "keyword": "acquiring presentation startup NextSlide", "url": "https://techcrunch.com/2026/08/08/openai-acquires-presentation-startup-nextslide/" }
+      ]
+    },
+    {
+      "text": "AI is already quietly reshaping the internal labor market inside companies. A new poll finds that 20% of workers now use AI for tasks that used to be delegated to colleagues, a figure that represents a structural shift in how work is routed, not just a productivity story. Google DeepMind CEO Demis Hassabis is doubling down on a grander thesis, publicly expecting all diseases to be cured within 20 years — a claim that, whatever its credibility, is shaping how investors and policymakers frame the stakes of the current AI race.",
+      "keywords": [
+        { "keyword": "20% of workers now use AI", "url": "https://www.reddit.com/r/singularity/comments/1vji3eg/20_of_workers_say_they_use_ai_for_tasks_that_used/" },
+        { "keyword": "Demis Hassabis", "url": "https://www.reddit.com/r/singularity/comments/1vjgmqi/demis_hassabis_expects_all_diseases_to_be_cured/" }
+      ]
+    },
+    {
+      "text": "Platform governance is getting messier on two fronts simultaneously. X has scrapped its existing revenue-sharing program and replaced it with "Original Content Rewards," a redesigned system the company admits was "misaligned" — a rare public concession that its creator monetization strategy has failed to compete with YouTube and TikTok. Separately, Illinois has passed a law requiring operating systems to report children's ages for age-verification purposes, a sweeping mandate that puts the compliance burden directly on OS vendors and sets a precedent that other states are likely to follow.",
+      "keywords": [
+        { "keyword": "Original Content Rewards", "url": "https://techcrunch.com/2026/08/08/x-replaces-misaligned-revenue-sharing-program-with-original-content-rewards/" },
+        { "keyword": "Illinois has passed a law requiring operating systems to report children's ages", "url": "https://itsfoss.com/news/illinois-age-verification-bill/" }
+      ]
+    }
+  ]
+}
+```

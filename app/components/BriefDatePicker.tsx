@@ -241,21 +241,21 @@ export function BriefDatePicker({
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open, isMobile]);
+  }, [open, isMobile, setOpen]);
 
   const handleSelect = useCallback(
     (date: string) => {
       onSelectDate(date);
       setOpen(false);
     },
-    [onSelectDate]
+    [onSelectDate, setOpen]
   );
 
   const today = getTodayDateString();
   const goToToday = useCallback(() => {
     onSelectDate(today);
     setOpen(false);
-  }, [onSelectDate, today]);
+  }, [onSelectDate, setOpen, today]);
 
   const calendarPanel = (
     <CalendarPanel

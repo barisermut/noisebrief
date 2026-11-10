@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { isCronAuthorized } from "@/lib/auth";
+import { isPublishableBrief } from "@/lib/brief-guard";
 import { fetchAllSources } from "@/lib/fetchAllSources";
 import { generateDailySummary } from "@/lib/claude";
 import { getSupabaseAdmin } from "@/lib/supabase";
@@ -71,6 +72,11 @@ export async function GET(request: Request) {
       throw new Error("Claude API failed");
     }
     const { title, summary, paragraphs, usedSources } = result;
+
+    if (!isPublishableBrief(title, paragraphs)) {
+      console.error("Cron rejected unpublishable brief");
+      throw new Error("Generated brief failed publish guard");
+    }
 
     const today = getTodayDateString();
     const { error: upsertError } = await getSupabaseAdmin()
