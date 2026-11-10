@@ -49,3 +49,7 @@ yarn-error.log*
 next-env.d.ts
 .cursor/
 .cursorrules
+
+# Local Claude desktop scratch (email previews, launch config)
+.claude/email-preview/
+.claude/launch.json
